@@ -1,0 +1,75 @@
+package com.example.newsapplication.model;
+
+import java.io.Serializable;
+import java.util.List;
+
+public class Article implements Serializable {
+    private String id;
+    private String title;
+    private String description;
+    private String content;
+    private String author;
+    private String source;
+    private String category;
+    private String imageUrl;
+    private int imageResId;
+    private String date;
+    private boolean isBookmarked;
+    private boolean isVideo;
+
+    public Article() {}
+
+    public Article(String id, String title, String description, String content,
+                   String author, String source, String category, String imageUrl,
+                   int imageResId, String date, boolean isVideo) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.content = content;
+        this.author = author;
+        this.source = source;
+        this.category = category;
+        this.imageUrl = imageUrl;
+        this.imageResId = imageResId;
+        this.date = date;
+        this.isVideo = isVideo;
+        this.isBookmarked = false;
+    }
+
+    // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+
+    public String getAuthor() { return author; }
+    public void setAuthor(String author) { this.author = author; }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public int getImageResId() { return imageResId; }
+    public void setImageResId(int imageResId) { this.imageResId = imageResId; }
+
+    public String getDate() { return date; }
+    public void setDate(String date) { this.date = date; }
+
+    public boolean isBookmarked() { return isBookmarked; }
+    public void setBookmarked(boolean bookmarked) { isBookmarked = bookmarked; }
+
+    public boolean isVideo() { return isVideo; }
+    public void setVideo(boolean video) { isVideo = video; }
+}
