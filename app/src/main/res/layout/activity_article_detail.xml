@@ -29,9 +29,26 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginTop="8dp"
-            android:layout_marginEnd="20dp"
+            android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
             android:src="@drawable/ic_share"
+            app:layout_constraintEnd_toStartOf="@id/fontSizeIcon"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/articleImageView" />
+
+        <!-- Font Size Icon in Header -->
+        <TextView
+            android:id="@+id/fontSizeIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:text="Aa"
+            android:textColor="@color/black"
+            android:textSize="10sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@id/bookmarkImageView"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@id/articleImageView" />

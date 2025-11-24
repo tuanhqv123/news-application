@@ -73,11 +73,6 @@ public class HomeFragment extends Fragment {
         binding.notificationIcon.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Notifications clicked", Toast.LENGTH_SHORT).show();
         });
-
-        // Settings icon click
-        binding.settingsIcon.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Settings clicked", Toast.LENGTH_SHORT).show();
-        });
     }
 
     private void setupTabNavigation() {
@@ -105,21 +100,23 @@ public class HomeFragment extends Fragment {
 
     private void updateTabSelection(android.view.View selectedTab) {
         // Reset all tabs to unselected state
-        binding.feedsTab.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-        binding.feedsTab.setTextColor(getResources().getColor(R.color.orange, null));
+        binding.feedsTab.setBackgroundResource(R.drawable.tab_background);
+        binding.feedsTab.setTextColor(getResources().getColor(R.color.black, null));
 
-        binding.popularTab.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        binding.popularTab.setBackgroundResource(R.drawable.tab_background);
         binding.popularTab.setTextColor(getResources().getColor(R.color.black, null));
 
-        binding.followingTab.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        binding.followingTab.setBackgroundResource(R.drawable.tab_background);
         binding.followingTab.setTextColor(getResources().getColor(R.color.black, null));
 
-        // Highlight selected tab
-        selectedTab.setBackgroundColor(getResources().getColor(R.color.orange, null));
+        // Highlight selected tab with rounded background
+        selectedTab.setBackgroundResource(R.drawable.tab_selected_background);
         if (selectedTab.getId() == R.id.feedsTab) {
             binding.feedsTab.setTextColor(android.graphics.Color.WHITE);
-        } else {
-            ((android.widget.TextView) selectedTab).setTextColor(android.graphics.Color.WHITE);
+        } else if (selectedTab.getId() == R.id.popularTab) {
+            binding.popularTab.setTextColor(android.graphics.Color.WHITE);
+        } else if (selectedTab.getId() == R.id.followingTab) {
+            binding.followingTab.setTextColor(android.graphics.Color.WHITE);
         }
     }
 

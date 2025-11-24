@@ -9,6 +9,8 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.newsapplication.model.Article;
+import com.example.newsapplication.ui.FontSizeDialog;
+import com.example.newsapplication.utils.FontSizeManager;
 
 public class ArticleDetailActivity extends AppCompatActivity {
 
@@ -22,16 +24,25 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private TextView categoryTextView;
     private TextView contentTextView;
 
+    // Font size controls
+    private TextView fontSizeIcon;
+    private FontSizeDialog fontSizeDialog;
+
     private Article currentArticle;
+    private FontSizeManager fontSizeManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_article_detail);
 
+        // Initialize font size manager
+        fontSizeManager = new FontSizeManager(this);
+
         initViews();
         setupData();
         setupClickListeners();
+        applyFontSize();
     }
 
     private void initViews() {
@@ -39,6 +50,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         articleImageView = findViewById(R.id.articleImageView);
         bookmarkImageView = findViewById(R.id.bookmarkImageView);
         shareImageView = findViewById(R.id.shareImageView);
+        fontSizeIcon = findViewById(R.id.fontSizeIcon);
         titleTextView = findViewById(R.id.titleTextView);
         sourceTextView = findViewById(R.id.sourceTextView);
         dateTextView = findViewById(R.id.dateTextView);
@@ -95,6 +107,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 startActivity(Intent.createChooser(shareIntent, "Share Article"));
             }
         });
+
+        // Font size icon click listener
+        fontSizeIcon.setOnClickListener(v -> {
+            android.util.Log.d("ArticleDetail", "Font size icon clicked");
+            showFontSizeDialog();
+        });
     }
 
     private void updateBookmarkIcon() {
@@ -102,6 +120,40 @@ public class ArticleDetailActivity extends AppCompatActivity {
             bookmarkImageView.setImageResource(R.drawable.ic_bookmark_filled);
         } else {
             bookmarkImageView.setImageResource(R.drawable.ic_bookmark_outline);
+        }
+    }
+
+    
+    private void applyFontSize() {
+        float fontSize = fontSizeManager.getFontSize();
+
+        // Apply font size to content text (main article content)
+        contentTextView.setTextSize(fontSize);
+
+        // You can also adjust other text elements if needed
+        // For now, we'll keep title and other metadata at their current sizes
+        // titleTextView.setTextSize(fontSize + 2); // Slightly larger for title
+        // sourceTextView.setTextSize(fontSize - 2); // Slightly smaller for source
+    }
+
+    private void showFontSizeDialog() {
+        android.util.Log.d("ArticleDetail", "showFontSizeDialog called");
+        try {
+            if (fontSizeDialog == null) {
+                android.util.Log.d("ArticleDetail", "Creating new FontSizeDialog");
+                fontSizeDialog = new FontSizeDialog(this, new FontSizeDialog.FontSizeCallback() {
+                    @Override
+                    public void onFontSizeApplied(int fontSize) {
+                        android.util.Log.d("ArticleDetail", "Font size applied: " + fontSize);
+                        // Apply the new font size
+                        applyFontSize();
+                    }
+                });
+            }
+            android.util.Log.d("ArticleDetail", "Showing FontSizeDialog");
+            fontSizeDialog.show();
+        } catch (Exception e) {
+            android.util.Log.e("ArticleDetail", "Error showing font size dialog", e);
         }
     }
 }

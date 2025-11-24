@@ -22,4 +22,16 @@
         android:name="com.example.newsapplication.ui.notifications.NotificationsFragment"
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_notifications" />
+
+    <fragment
+        android:id="@+id/navigation_saved"
+        android:name="com.example.newsapplication.ui.saved.SavedFragment"
+        android:label="Saved"
+        tools:layout="@layout/fragment_saved" />
+
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.example.newsapplication.ui.profile.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
 </navigation>

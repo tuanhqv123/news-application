@@ -17,7 +17,7 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="65dp"
+            android:layout_marginTop="16dp"
             android:src="@drawable/ic_launcher_foreground"
             android:background="@drawable/avatar_background"
             android:padding="0dp"
@@ -30,23 +30,9 @@
             android:id="@+id/notificationIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_marginTop="78dp"
-            android:layout_marginEnd="20dp"
-            android:src="@android:drawable/ic_dialog_email"
-            android:background="@drawable/icon_background"
-            android:padding="2dp"
-            android:elevation="2dp"
-            app:layout_constraintEnd_toStartOf="@+id/settingsIcon"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Settings Icon -->
-        <ImageView
-            android:id="@+id/settingsIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginTop="78dp"
+            android:layout_marginTop="28dp"
             android:layout_marginEnd="16dp"
-            android:src="@android:drawable/ic_menu_preferences"
+            android:src="@android:drawable/ic_dialog_email"
             android:background="@drawable/icon_background"
             android:padding="2dp"
             android:elevation="2dp"
@@ -54,29 +40,33 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Welcome Section -->
-        <TextView
-            android:id="@+id/greetingTextView"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="84dp"
-            android:layout_marginTop="75dp"
-                        android:text="Good Morning, "
-            android:textColor="#000000"
-            android:textSize="12sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="26dp"
+            android:orientation="vertical"
+            app:layout_constraintStart_toEndOf="@id/userAvatar"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/userNameTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="84dp"
-                        android:textStyle="bold"
-            android:text="Mia Luna"
-            android:textColor="#000000"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/greetingTextView" />
+            <TextView
+                android:id="@+id/greetingTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Good Morning,"
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/userNameTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:text="Mia Luna"
+                android:textColor="#000000"
+                android:textSize="14sp" />
+
+        </LinearLayout>
 
         <!-- Tab Navigation -->
         <LinearLayout
@@ -84,7 +74,7 @@
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
             android:background="@drawable/tab_background"
             android:orientation="horizontal"

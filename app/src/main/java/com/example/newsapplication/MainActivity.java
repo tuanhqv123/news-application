@@ -12,16 +12,23 @@ import androidx.navigation.ui.AppBarConfiguration;
 
 import com.example.newsapplication.R;
 import com.example.newsapplication.databinding.ActivityMainBinding;
+import com.example.newsapplication.auth.AuthenticationDialog;
+import com.example.newsapplication.auth.UserSessionManager;
 
 import androidx.fragment.app.Fragment;
 
 import com.example.newsapplication.ui.home.HomeFragment;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements AuthenticationDialog.AuthCallback {
 
     private ActivityMainBinding binding;
     private NavController navController;
     private String currentSource = "VnExpress";
+    private UserSessionManager sessionManager;
+    private AuthenticationDialog authDialog;
+
+    // Testing variable - set to true to bypass login for testing
+    private boolean is_logged_in = true;
 
     // Navigation state constants
     private static final int NAV_HOME = 1;
@@ -35,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        // Initialize session manager
+        sessionManager = new UserSessionManager(this);
 
         // Set up navigation to include all fragments
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -65,7 +75,8 @@ public class MainActivity extends AppCompatActivity {
 
             binding.savedNavItem.setOnClickListener(v -> {
                 try {
-                    navController.navigate(R.id.navigation_notifications);
+                    // Navigate to saved fragment (no login required)
+                    navController.navigate(R.id.navigation_saved);
                     updateNavigationState(NAV_SAVED);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -74,8 +85,8 @@ public class MainActivity extends AppCompatActivity {
 
             binding.profileNavItem.setOnClickListener(v -> {
                 try {
-                    // Navigate to notifications fragment which will become Profile
-                    navController.navigate(R.id.navigation_notifications);
+                    // Navigate to profile fragment (no login required)
+                    navController.navigate(R.id.navigation_profile);
                     updateNavigationState(NAV_PROFILE);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -120,6 +131,63 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void showLoginDialog() {
+        if (authDialog == null) {
+            authDialog = new AuthenticationDialog(this, this);
+        }
+        authDialog.show();
+    }
+
+    @Override
+    public void onLoginSuccess(String email, String password) {
+        // Create session with default name from email
+        String name = email.substring(0, email.indexOf("@"));
+        String role = "reader"; // Default role for login users
+
+        sessionManager.createLoginSession(email, name, role);
+
+        Toast.makeText(this, "Welcome back, " + name + "!", Toast.LENGTH_SHORT).show();
+        // Navigate to saved items after login
+        navController.navigate(R.id.navigation_notifications);
+        updateNavigationState(NAV_SAVED);
+    }
+
+    @Override
+    public void onSignupSuccess(String name, String email, String password, String role) {
+        sessionManager.createLoginSession(email, name, role);
+
+        Toast.makeText(this, "Welcome, " + name + "! Role: " + role, Toast.LENGTH_SHORT).show();
+        // Navigate to profile after signup
+        navController.navigate(R.id.navigation_notifications);
+        updateNavigationState(NAV_PROFILE);
+    }
+
+    @Override
+    public void onAuthCancelled() {
+        // User closed the dialog without authenticating
+        Toast.makeText(this, "Authentication cancelled", Toast.LENGTH_SHORT).show();
+    }
+
+    public boolean isUserLoggedIn() {
+        return sessionManager.isLoggedIn();
+    }
+
+    public String getCurrentUserRole() {
+        return sessionManager.getUserRole();
+    }
+
+    public String getCurrentUserName() {
+        return sessionManager.getUserName();
+    }
+
+    public String getCurrentUserEmail() {
+        return sessionManager.getUserEmail();
+    }
+
+    public boolean isUserLoggedInForTesting() {
+        return is_logged_in;
     }
 
     private void switchNewsSource() {
