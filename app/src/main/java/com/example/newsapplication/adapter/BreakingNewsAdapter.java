@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.newsapplication.R;
 import com.example.newsapplication.model.Article;
 import java.util.List;
@@ -55,12 +56,18 @@ public class BreakingNewsAdapter extends RecyclerView.Adapter<BreakingNewsAdapte
             holder.categoryTextView.setText(article.getCategory());
         }
 
-        // Load image from local resources for frontend-only implementation
-        if (holder.imageView != null && article.getImageResId() != 0) {
-            holder.imageView.setImageResource(article.getImageResId());
-        } else {
-            // Set default placeholder if no image resource is available
-            holder.imageView.setImageResource(R.drawable.ic_launcher_foreground);
+        if (holder.imageView != null) {
+            if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
+                Glide.with(holder.imageView.getContext())
+                        .load(article.getImageUrl())
+                        .placeholder(article.getImageResId() != 0 ? article.getImageResId() : R.drawable.placeholder_image)
+                        .error(R.drawable.error_image)
+                        .into(holder.imageView);
+            } else if (article.getImageResId() != 0) {
+                holder.imageView.setImageResource(article.getImageResId());
+            } else {
+                holder.imageView.setImageResource(R.drawable.placeholder_image);
+            }
         }
 
         // Handle item click

@@ -15,7 +15,7 @@ class FirebaseManager private constructor() {
 
     companion object {
         private const val TAG = "FirebaseManager"
-        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
+        const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
 
         @Volatile
         private var INSTANCE: FirebaseManager? = null

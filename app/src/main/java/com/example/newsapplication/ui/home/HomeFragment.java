@@ -2,6 +2,7 @@ package com.example.newsapplication.ui.home;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,9 +19,10 @@ import com.example.newsapplication.ArticleDetailActivity;
 import com.example.newsapplication.R;
 import com.example.newsapplication.adapter.BreakingNewsAdapter;
 import com.example.newsapplication.adapter.NewsAdapter;
+import com.example.newsapplication.data.MockDataProvider;
+import com.example.newsapplication.data.remote.SupabaseNewsRemoteDataSource;
 import com.example.newsapplication.databinding.FragmentHomeBinding;
 import com.example.newsapplication.model.Article;
-import com.example.newsapplication.data.MockDataProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +49,10 @@ public class HomeFragment extends Fragment {
 
         mockDataProvider = new MockDataProvider();
         setupRecyclerViews();
-        loadMockNews();
+        loadBreakingNewsFromMock();
+        loadPopularNewsFromMock();
+        loadBreakingNews();
+        loadPopularNews();
         setupTabNavigation();
         setupHeaderClicks();
 
@@ -132,13 +137,22 @@ public class HomeFragment extends Fragment {
 
     private void loadFollowingContent() {
         Toast.makeText(getContext(), "Loading Following content", Toast.LENGTH_SHORT).show();
-        // Load following content
-        if (mockDataProvider != null) {
-            List<Article> articles = mockDataProvider.getPopularNews();
-            popularNewsList.clear();
-            popularNewsList.addAll(articles.subList(0, Math.min(6, articles.size())));
-            newsAdapter.notifyDataSetChanged();
-        }
+        SupabaseNewsRemoteDataSource.fetchPopularNews(articles -> {
+            List<Article> filtered = new ArrayList<>();
+            for (Article article : articles) {
+                if (article.getSource() != null && article.getSource().equalsIgnoreCase(currentSource)) {
+                    filtered.add(article);
+                }
+            }
+            if (filtered.isEmpty()) {
+                filtered = new ArrayList<>(articles);
+            }
+            updatePopularNews(filtered);
+        }, throwable -> {
+            Log.e("HomeFragment", "Failed to load following content", throwable);
+            loadPopularNewsFromMock();
+            showRemoteErrorToast();
+        });
     }
 
     private void setupRecyclerViews() {
@@ -174,70 +188,70 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private void loadMockNews() {
-        // Load only mock data for frontend-only implementation
-        loadMockDataForDebugging();
-    }
-
-    private void loadMockDataForDebugging() {
-        // Add test articles to verify UI works
-        breakingNewsList.add(new Article(
-                "debug1",
-                "Test Article - Frontend Only",
-                "Testing frontend-only implementation",
-                "This is a test article to verify that the UI and adapters are working correctly with local resources.",
-                "Debug Source",
-                "Debug",
-                "Test",
-                null, // No imageUrl for frontend-only
-                com.example.newsapplication.R.drawable.ic_launcher_foreground,
-                "16/11/2025",
-                false
-        ));
-
-        // Add test article to popular news
-        popularNewsList.add(new Article(
-                "debug2",
-                "Sample Popular News Article",
-                "This is a sample article in the popular news section to test the grid layout and navigation.",
-                "Full content for this sample article. This should display properly when clicked and show the article detail screen with the corrected header spacing.",
-                "Test News",
-                "Test News",
-                "Sample",
-                null, // No imageUrl for frontend-only
-                com.example.newsapplication.R.drawable.placeholder_image,
-                "16/11/2025",
-                false
-        ));
-
-        breakingNewsAdapter.notifyDataSetChanged();
-        newsAdapter.notifyDataSetChanged();
-    }
-
     private void loadBreakingNews() {
-        // Load breaking news from mock data provider
-        if (mockDataProvider != null) {
-            List<Article> articles = mockDataProvider.getBreakingNews();
-            breakingNewsList.clear();
-            breakingNewsList.addAll(articles.subList(0, Math.min(10, articles.size())));
-            breakingNewsAdapter.notifyDataSetChanged();
-        }
+        SupabaseNewsRemoteDataSource.fetchBreakingNews(articles -> {
+            if (articles != null && !articles.isEmpty()) {
+                updateBreakingNews(articles);
+            }
+        }, throwable -> {
+            Log.e("HomeFragment", "Failed to load breaking news from Supabase", throwable);
+            loadBreakingNewsFromMock();
+            showRemoteErrorToast();
+        });
     }
 
     private void loadPopularNews() {
-        // Load popular news from mock data provider
+        SupabaseNewsRemoteDataSource.fetchPopularNews(articles -> {
+            if (articles != null && !articles.isEmpty()) {
+                updatePopularNews(articles);
+            }
+        }, throwable -> {
+            Log.e("HomeFragment", "Failed to load popular news from Supabase", throwable);
+            loadPopularNewsFromMock();
+            showRemoteErrorToast();
+        });
+    }
+
+    private void updateBreakingNews(List<Article> articles) {
+        breakingNewsList.clear();
+        breakingNewsList.addAll(articles.subList(0, Math.min(10, articles.size())));
+        breakingNewsAdapter.notifyDataSetChanged();
+    }
+
+    private void updatePopularNews(List<Article> articles) {
+        popularNewsList.clear();
+        popularNewsList.addAll(articles.subList(0, Math.min(20, articles.size())));
+        newsAdapter.notifyDataSetChanged();
+    }
+
+    private void loadBreakingNewsFromMock() {
+        if (mockDataProvider != null) {
+            List<Article> articles = mockDataProvider.getBreakingNews();
+            if (articles != null && !articles.isEmpty()) {
+                updateBreakingNews(articles);
+            }
+        }
+    }
+
+    private void loadPopularNewsFromMock() {
         if (mockDataProvider != null) {
             List<Article> articles = mockDataProvider.getPopularNews();
-            popularNewsList.clear();
-            popularNewsList.addAll(articles.subList(0, Math.min(20, articles.size())));
-            newsAdapter.notifyDataSetChanged();
+            if (articles != null && !articles.isEmpty()) {
+                updatePopularNews(articles);
+            }
+        }
+    }
+
+    private void showRemoteErrorToast() {
+        if (getContext() != null) {
+            Toast.makeText(getContext(), "Không thể tải dữ liệu Supabase, dùng dữ liệu mẫu.", Toast.LENGTH_SHORT).show();
         }
     }
 
     public void switchToSource(String source) {
         // For frontend-only implementation, source switching is handled by different mock data
         this.currentSource = source;
-        loadPopularNews();
+        loadFollowingContent();
     }
 
     private void openArticleDetail(Article article) {
