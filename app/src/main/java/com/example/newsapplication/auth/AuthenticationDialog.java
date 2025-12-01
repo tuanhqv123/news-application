@@ -17,12 +17,12 @@ import androidx.annotation.NonNull;
 import com.example.newsapplication.R;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import org.json.JSONObject;
 
 public class AuthenticationDialog extends Dialog {
 
     public interface AuthCallback {
-        void onLoginSuccess(String email, String password);
-        void onSignupSuccess(String name, String email, String password, String role);
+        void onAuthSuccess();
         void onAuthCancelled();
     }
 
@@ -30,6 +30,7 @@ public class AuthenticationDialog extends Dialog {
     private boolean isLoginMode = true;
     private View loginView;
     private View signupView;
+    private AuthService authService;
 
     // Login views
     private TextInputEditText loginEmailEditText;
@@ -44,7 +45,6 @@ public class AuthenticationDialog extends Dialog {
     private TextInputEditText signupEmailEditText;
     private TextInputEditText signupPasswordEditText;
     private TextInputEditText signupConfirmPasswordEditText;
-    private RadioGroup roleRadioGroup;
     private TextView loginLinkText;
     private Button signupButton;
     private View googleSignupButton;
@@ -56,6 +56,7 @@ public class AuthenticationDialog extends Dialog {
     public AuthenticationDialog(@NonNull Context context, AuthCallback callback) {
         super(context, android.R.style.Theme_Material_Light_Dialog);
         this.callback = callback;
+        this.authService = new AuthService(context);
     }
 
     @Override
@@ -86,13 +87,9 @@ public class AuthenticationDialog extends Dialog {
         signupEmailEditText = findViewById(R.id.emailEditText);
         signupPasswordEditText = findViewById(R.id.passwordEditText);
         signupConfirmPasswordEditText = findViewById(R.id.confirmPasswordEditText);
-        roleRadioGroup = findViewById(R.id.roleRadioGroup);
         loginLinkText = findViewById(R.id.loginLinkText);
         signupButton = findViewById(R.id.signupButton);
         googleSignupButton = findViewById(R.id.googleSignupButton);
-
-        // Default to reader role
-        roleRadioGroup.check(R.id.readerRadioButton);
     }
 
     private void setupLoginListeners() {
@@ -157,10 +154,25 @@ public class AuthenticationDialog extends Dialog {
         String password = loginPasswordEditText.getText().toString().trim();
 
         if (validateLoginInputs(email, password)) {
-            if (callback != null) {
-                callback.onLoginSuccess(email, password);
-            }
-            dismiss();
+            loginButton.setEnabled(false);
+            loginButton.setText("Logging in...");
+            
+            authService.login(email, password, new AuthService.AuthResultCallback() {
+                @Override
+                public void onSuccess(JSONObject response) {
+                    if (callback != null) {
+                        callback.onAuthSuccess();
+                    }
+                    dismiss();
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    loginButton.setEnabled(true);
+                    loginButton.setText("Login");
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 
@@ -171,11 +183,25 @@ public class AuthenticationDialog extends Dialog {
         String confirmPassword = signupConfirmPasswordEditText.getText().toString().trim();
 
         if (validateSignupInputs(name, email, password, confirmPassword)) {
-            String role = roleRadioGroup.getCheckedRadioButtonId() == R.id.readerRadioButton ? "reader" : "author";
-            if (callback != null) {
-                callback.onSignupSuccess(name, email, password, role);
-            }
-            dismiss();
+            signupButton.setEnabled(false);
+            signupButton.setText("Signing up...");
+            
+            authService.register(email, password, name, new AuthService.AuthResultCallback() {
+                @Override
+                public void onSuccess(JSONObject response) {
+                    Toast.makeText(getContext(), "Registration successful! Please login.", Toast.LENGTH_SHORT).show();
+                    switchToLogin();
+                    signupButton.setEnabled(true);
+                    signupButton.setText("Sign Up");
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    signupButton.setEnabled(true);
+                    signupButton.setText("Sign Up");
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 

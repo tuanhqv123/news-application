@@ -1,7 +1,7 @@
 package com.example.newsapplication.api;
 
 public class ApiConfig {
-    public static final String BASE_URL = "http://127.0.0.1:8000";
+    public static final String BASE_URL = "http://10.0.2.2:8000";
     public static final int TIMEOUT_MS = 30000;
     public static final String API_VERSION = "/api/v1";
 

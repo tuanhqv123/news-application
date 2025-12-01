@@ -31,7 +31,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     @Override
     public NewsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_news_card, parent, false);
+                .inflate(R.layout.item_news_feed, parent, false);
         return new NewsViewHolder(view);
     }
 
@@ -49,20 +49,55 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         if (holder.titleTextView != null && article.getTitle() != null) {
             holder.titleTextView.setText(article.getTitle());
         }
-        if (holder.sourceTextView != null && article.getSource() != null) {
-            holder.sourceTextView.setText(article.getSource());
+        
+        if (holder.sourceTextView != null) {
+            String sourceText = article.getSource() != null ? article.getSource() : "";
+            if (article.getDate() != null && !article.getDate().isEmpty()) {
+                if (!sourceText.isEmpty()) {
+                    sourceText += " • ";
+                }
+                sourceText += article.getDate();
+            }
+            holder.sourceTextView.setText(sourceText);
         }
-        // Date is already included in sourceTextView, so we don't set dateTextView separately
+
         if (holder.categoryTextView != null && article.getCategory() != null) {
             holder.categoryTextView.setText(article.getCategory());
         }
 
-        // Load image from local resources for frontend-only implementation
-        if (holder.imageView != null && article.getImageResId() != 0) {
-            holder.imageView.setImageResource(article.getImageResId());
-        } else {
-            // Set default placeholder if no image resource is available
-            holder.imageView.setImageResource(R.drawable.ic_launcher_foreground);
+        // Load image from URL using Picasso
+        if (holder.imageView != null) {
+            if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
+                // Load image from URL with proper configuration
+                com.squareup.picasso.Picasso.get()
+                    .load(article.getImageUrl())
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .fit()
+                    .centerCrop()
+                    .into(holder.imageView);
+            } else {
+                // Set placeholder if no URL is available
+                holder.imageView.setImageResource(R.drawable.placeholder_image);
+            }
+        }
+
+        // Handle bookmark click
+        if (holder.itemView.findViewById(R.id.bookmarkIcon) != null) {
+            ImageView bookmarkIcon = holder.itemView.findViewById(R.id.bookmarkIcon);
+            
+            // Update bookmark icon state
+            if (article.isBookmarked()) {
+                bookmarkIcon.setImageResource(R.drawable.ic_bookmark_filled);
+            } else {
+                bookmarkIcon.setImageResource(R.drawable.ic_bookmark_outline);
+            }
+            
+            bookmarkIcon.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onBookmarkClick(article, holder.getAdapterPosition());
+                }
+            });
         }
 
         // Handle item click

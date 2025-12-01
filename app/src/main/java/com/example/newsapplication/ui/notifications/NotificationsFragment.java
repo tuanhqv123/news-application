@@ -45,8 +45,8 @@ public class NotificationsFragment extends Fragment {
         // Initialize login button
         loginButtonContainer = binding.loginButtonContainer;
 
-        // Show/hide appropriate UI based on login state OR testing variable
-        boolean isLoggedIn = sessionManager.isLoggedIn() || ((MainActivity) getActivity()) != null && ((MainActivity) getActivity()).isUserLoggedInForTesting();
+        // Show/hide appropriate UI based on login state
+        boolean isLoggedIn = sessionManager.isLoggedIn();
 
         if (isLoggedIn) {
             // Show logged in UI

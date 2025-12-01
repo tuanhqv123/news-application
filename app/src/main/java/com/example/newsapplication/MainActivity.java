@@ -1,6 +1,7 @@
 package com.example.newsapplication;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,6 +15,7 @@ import com.example.newsapplication.R;
 import com.example.newsapplication.databinding.ActivityMainBinding;
 import com.example.newsapplication.auth.AuthenticationDialog;
 import com.example.newsapplication.auth.UserSessionManager;
+import com.example.newsapplication.auth.AuthService;
 
 import androidx.fragment.app.Fragment;
 
@@ -27,8 +29,7 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     private UserSessionManager sessionManager;
     private AuthenticationDialog authDialog;
 
-    // Testing variable - set to true to bypass login for testing
-    private boolean is_logged_in = true;
+
 
     // Navigation state constants
     private static final int NAV_HOME = 1;
@@ -45,6 +46,19 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
         // Initialize session manager
         sessionManager = new UserSessionManager(this);
+        
+        // Initialize Picasso for better image loading
+        com.squareup.picasso.Picasso.Builder builder = new com.squareup.picasso.Picasso.Builder(this);
+        builder.loggingEnabled(true);
+        builder.indicatorsEnabled(true);
+        com.squareup.picasso.Picasso picasso = builder.build();
+        com.squareup.picasso.Picasso.setSingletonInstance(picasso);
+        
+        // Initialize API client with auth token if available
+        String authToken = sessionManager.getAuthToken();
+        if (authToken != null) {
+            new AuthService(this); // This will initialize ApiClient with token
+        }
 
         // Set up navigation to include all fragments
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -75,9 +89,16 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
             binding.savedNavItem.setOnClickListener(v -> {
                 try {
-                    // Navigate to saved fragment (no login required)
-                    navController.navigate(R.id.navigation_saved);
-                    updateNavigationState(NAV_SAVED);
+                    if (sessionManager.isLoggedIn()) {
+                        // Navigate to saved fragment
+                        Log.d("MainActivity", "User logged in, navigating to saved");
+                        navController.navigate(R.id.navigation_saved);
+                        updateNavigationState(NAV_SAVED);
+                    } else {
+                        // Show login dialog
+                        Log.d("MainActivity", "User not logged in, showing login dialog");
+                        showLoginDialog();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -85,9 +106,16 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
             binding.profileNavItem.setOnClickListener(v -> {
                 try {
-                    // Navigate to profile fragment (no login required)
-                    navController.navigate(R.id.navigation_profile);
-                    updateNavigationState(NAV_PROFILE);
+                    if (sessionManager.isLoggedIn()) {
+                        // Navigate to profile fragment
+                        Log.d("MainActivity", "User logged in, navigating to profile");
+                        navController.navigate(R.id.navigation_profile);
+                        updateNavigationState(NAV_PROFILE);
+                    } else {
+                        // Show login dialog
+                        Log.d("MainActivity", "User not logged in, showing login dialog");
+                        showLoginDialog();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -140,55 +168,33 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         authDialog.show();
     }
 
-    @Override
-    public void onLoginSuccess(String email, String password) {
-        // Create session with default name from email
-        String name = email.substring(0, email.indexOf("@"));
-        String role = "reader"; // Default role for login users
-
-        sessionManager.createLoginSession(email, name, role);
-
-        Toast.makeText(this, "Welcome back, " + name + "!", Toast.LENGTH_SHORT).show();
-        // Navigate to saved items after login
-        navController.navigate(R.id.navigation_notifications);
-        updateNavigationState(NAV_SAVED);
+    public void navigateToProfile() {
+        navController.navigate(R.id.navigation_profile);
+        updateNavigationState(NAV_PROFILE);
     }
 
     @Override
-    public void onSignupSuccess(String name, String email, String password, String role) {
-        sessionManager.createLoginSession(email, name, role);
-
-        Toast.makeText(this, "Welcome, " + name + "! Role: " + role, Toast.LENGTH_SHORT).show();
-        // Navigate to profile after signup
-        navController.navigate(R.id.navigation_notifications);
-        updateNavigationState(NAV_PROFILE);
+    public void onAuthSuccess() {
+        String userName = sessionManager.getUserName();
+        if (userName.isEmpty()) {
+            userName = sessionManager.getUserEmail().split("@")[0];
+        }
+        
+        Log.d("MainActivity", "Auth success for user: " + userName + ", role: " + sessionManager.getUserRole());
+        Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
+        
+        // Navigate to intended destination after successful login
+        navController.navigate(R.id.navigation_saved);
+        updateNavigationState(NAV_SAVED);
     }
 
     @Override
     public void onAuthCancelled() {
         // User closed the dialog without authenticating
-        Toast.makeText(this, "Authentication cancelled", Toast.LENGTH_SHORT).show();
+        // No need to show a toast as this is a normal user action
     }
 
-    public boolean isUserLoggedIn() {
-        return sessionManager.isLoggedIn();
-    }
 
-    public String getCurrentUserRole() {
-        return sessionManager.getUserRole();
-    }
-
-    public String getCurrentUserName() {
-        return sessionManager.getUserName();
-    }
-
-    public String getCurrentUserEmail() {
-        return sessionManager.getUserEmail();
-    }
-
-    public boolean isUserLoggedInForTesting() {
-        return is_logged_in;
-    }
 
     private void switchNewsSource() {
         // Toggle between VnExpress and Tuổi Trẻ

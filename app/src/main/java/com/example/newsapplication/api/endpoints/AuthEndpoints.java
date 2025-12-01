@@ -33,8 +33,18 @@ public class AuthEndpoints {
     }
 
     public void updateProfile(String displayName, String avatarUrl, ApiClient.ApiCallback<JSONObject> callback) {
-        UserProfile profile = new UserProfile(displayName, avatarUrl);
-        apiClient.put(ApiConfig.API_VERSION + "/auth/me", profile, callback);
+        JSONObject requestBody = new JSONObject();
+        try {
+            if (displayName != null && !displayName.isEmpty()) {
+                requestBody.put("display_name", displayName);
+            }
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                requestBody.put("avatar_url", avatarUrl);
+            }
+        } catch (Exception e) {
+            // Handle JSON error
+        }
+        apiClient.put(ApiConfig.API_VERSION + "/auth/me", requestBody, callback);
     }
 
     public void inviteUser(String email, int roleId, Integer channelId, String invitedBy, ApiClient.ApiCallback<JSONObject> callback) {
@@ -49,5 +59,10 @@ public class AuthEndpoints {
 
     public void getRoles(ApiClient.ApiCallback<JSONObject> callback) {
         apiClient.get(ApiConfig.API_VERSION + "/auth/roles", callback);
+    }
+
+    public void refreshToken(String refreshToken, ApiClient.ApiCallback<JSONObject> callback) {
+        String endpoint = ApiConfig.API_VERSION + "/auth/refresh?refresh_token=" + refreshToken;
+        apiClient.post(endpoint, null, callback);
     }
 }

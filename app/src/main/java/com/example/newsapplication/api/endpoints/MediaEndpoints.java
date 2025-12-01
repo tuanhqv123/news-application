@@ -1,9 +1,7 @@
 package com.example.newsapplication.api.endpoints;
 
 import com.example.newsapplication.api.ApiClient;
-import com.example.newsapplication.api.ApiConfig;
 import org.json.JSONObject;
-import java.io.File;
 
 public class MediaEndpoints {
     private final ApiClient apiClient;
@@ -12,9 +10,33 @@ public class MediaEndpoints {
         this.apiClient = apiClient;
     }
 
-    public void uploadFile(File file, ApiClient.ApiCallback<JSONObject> callback) {
-        // Note: For multipart upload, Volley needs extension or custom implementation
-        // This is a placeholder - implement proper multipart request
-        apiClient.post(ApiConfig.API_VERSION + "/media/upload", null, callback);
+    public void uploadFile(String filePath, String description, ApiClient.ApiCallback<JSONObject> callback) {
+        String endpoint = "/api/v1/media/upload";
+        
+        // Create request body
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("file", filePath);
+            requestBody.put("description", description);
+        } catch (Exception e) {
+            // Handle error
+        }
+        
+        apiClient.post(endpoint, requestBody, callback);
+    }
+
+    public void uploadImage(String base64Image, ApiClient.ApiCallback<JSONObject> callback) {
+        String endpoint = "/api/v1/media/upload";
+        
+        // Create request body
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("file", base64Image);
+            requestBody.put("description", "Profile avatar upload");
+        } catch (Exception e) {
+            // Handle error
+        }
+        
+        apiClient.post(endpoint, requestBody, callback);
     }
 }

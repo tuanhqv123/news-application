@@ -20,7 +20,9 @@ import com.example.newsapplication.adapter.NewsAdapter;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.databinding.FragmentSavedBinding;
 import com.example.newsapplication.model.Article;
-import com.example.newsapplication.data.MockDataProvider;
+import com.example.newsapplication.repository.NewsRepository;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,24 +33,31 @@ public class SavedFragment extends Fragment {
     private NewsAdapter savedNewsAdapter;
     private RecyclerView savedNewsRecyclerView;
     private List<Article> savedArticlesList;
-    private MockDataProvider mockDataProvider;
+
     private LinearLayout emptyStateText;
     private LinearLayout loginButtonContainer;
     private UserSessionManager sessionManager;
+    private NewsRepository newsRepository;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentSavedBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // Initialize session manager
+        // Initialize session manager and repository
         sessionManager = new UserSessionManager(getContext());
+        newsRepository = new NewsRepository(getContext());
 
         initViews();
         setupClickListeners();
 
-        // Always show saved articles (no login required)
-        showLoggedInState();
+        // Check login status 
+        if (sessionManager.isLoggedIn()) {
+            // User is logged in, show saved content directly
+            showLoggedInState();
+        } else {
+            showLoggedOutState();
+        }
 
         return root;
     }
@@ -70,10 +79,10 @@ public class SavedFragment extends Fragment {
     }
 
     private void showLoggedOutState() {
-        // Show login UI
-        loginButtonContainer.setVisibility(View.VISIBLE);
+        // Show empty state instead of login UI
+        loginButtonContainer.setVisibility(View.GONE);
         savedNewsRecyclerView.setVisibility(View.GONE);
-        emptyStateText.setVisibility(View.GONE);
+        emptyStateText.setVisibility(View.VISIBLE);
     }
 
     private void showLoggedInState() {
@@ -84,25 +93,42 @@ public class SavedFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        mockDataProvider = new MockDataProvider();
         savedArticlesList = new ArrayList<>();
 
         savedNewsAdapter = new NewsAdapter(savedArticlesList, new NewsAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(Article article) {
                 // Handle article click - navigate to article detail
-                Toast.makeText(getContext(), "Opening saved article: " + article.getTitle(), Toast.LENGTH_SHORT).show();
+                try {
+                    android.content.Intent intent = new android.content.Intent(getContext(), com.example.newsapplication.ArticleDetailActivity.class);
+                    intent.putExtra("article", article);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
             public void onBookmarkClick(Article article, int position) {
-                // Handle bookmark click (toggle bookmark)
-                article.setBookmarked(!article.isBookmarked());
-                if (!article.isBookmarked()) {
-                    savedArticlesList.remove(article);
-                    savedNewsAdapter.notifyDataSetChanged();
-                    Toast.makeText(getContext(), "Article removed from saved", Toast.LENGTH_SHORT).show();
-                }
+                // Handle bookmark click (remove bookmark)
+                newsRepository.removeBookmark(article.getId(), new NewsRepository.RepositoryCallback<JSONObject>() {
+                    @Override
+                    public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                        if (response.isSuccess()) {
+                            savedArticlesList.remove(article);
+                            savedNewsAdapter.notifyDataSetChanged();
+                            
+                            if (savedArticlesList.isEmpty()) {
+                                savedNewsRecyclerView.setVisibility(View.GONE);
+                                emptyStateText.setVisibility(View.VISIBLE);
+                            }
+                            
+                            Toast.makeText(getContext(), "Article removed from saved", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "Failed to remove bookmark", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
             }
         });
 
@@ -111,20 +137,105 @@ public class SavedFragment extends Fragment {
     }
 
     private void loadSavedArticles() {
-        // Get bookmarked articles from mock data
-        savedArticlesList.clear();
-
-        // Add some mock saved articles
-        List<Article> allArticles = MockDataProvider.getPopularNews();
-        for (Article article : allArticles) {
-            // For demo purposes, let's mark some articles as bookmarked
-            if (article.getTitle().contains("Tech") || article.getTitle().contains("Politics")) {
-                article.setBookmarked(true);
-                savedArticlesList.add(article);
+        if (newsRepository == null) return;
+        
+        newsRepository.getBookmarks(new NewsRepository.RepositoryCallback<JSONObject>() {
+            @Override
+            public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                if (response.isSuccess() && response.getData() != null) {
+                    loadRealBookmarks(response.getData());
+                } else {
+                    android.util.Log.e("SavedFragment", "Failed to load bookmarks: " + response.getErrorMessage());
+                    loadMockBookmarks();
+                }
             }
-        }
+        });
+    }
 
-        // If no saved articles, show empty state
+    private void loadRealBookmarks(JSONObject data) {
+        android.util.Log.d("SavedFragment", "Bookmarks response: " + data.toString());
+        savedArticlesList.clear();
+        
+        try {
+            JSONArray results = null;
+            
+            // API response format: {"success":true,"data":{"bookmarks":[{"user_id":"...","article_id":"...","articles":{...}}]}}
+            if (data.has("data")) {
+                Object dataObj = data.get("data");
+                if (dataObj instanceof JSONObject) {
+                    JSONObject dataJson = (JSONObject) dataObj;
+                    if (dataJson.has("bookmarks")) {
+                        results = dataJson.getJSONArray("bookmarks");
+                        android.util.Log.d("SavedFragment", "Found bookmarks in data.bookmarks");
+                    } else if (dataJson.has("results")) {
+                        results = dataJson.getJSONArray("results");
+                    }
+                } else if (dataObj instanceof JSONArray) {
+                    results = (JSONArray) dataObj;
+                }
+            } else if (data.has("bookmarks")) {
+                results = data.getJSONArray("bookmarks");
+            } else if (data.has("results")) {
+                results = data.getJSONArray("results");
+            }
+            
+            android.util.Log.d("SavedFragment", "Found " + (results != null ? results.length() : 0) + " bookmarks");
+            
+            if (results != null && results.length() > 0) {
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject bookmark = results.getJSONObject(i);
+                    android.util.Log.d("SavedFragment", "Bookmark item " + i + ": " + bookmark.toString());
+                    
+                    Article article = null;
+                    
+                    // Check for "articles" key (API response uses "articles" not "article")
+                    if (bookmark.has("articles") && !bookmark.isNull("articles")) {
+                        JSONObject articleJson = bookmark.getJSONObject("articles");
+                        article = parseArticleFromJson(articleJson);
+                        android.util.Log.d("SavedFragment", "Parsed article from 'articles': " + (article != null ? article.getTitle() : "null"));
+                    }
+                    // Check if article data is embedded in the bookmark as "article"
+                    else if (bookmark.has("article") && !bookmark.isNull("article")) {
+                        JSONObject articleJson = bookmark.getJSONObject("article");
+                        article = parseArticleFromJson(articleJson);
+                    } 
+                    // Check if this is the article directly (not wrapped)
+                    else if (bookmark.has("title") && bookmark.has("id")) {
+                        article = parseArticleFromJson(bookmark);
+                    }
+                    // Check for article_id and try to use other available fields
+                    else if (bookmark.has("article_id")) {
+                        String articleId = bookmark.optString("article_id");
+                        // Create a minimal article with available data
+                        article = new Article(
+                            articleId,
+                            bookmark.optString("title", "Saved Article"),
+                            bookmark.optString("summary", ""),
+                            bookmark.optString("content", ""),
+                            bookmark.optString("source", "Unknown"),
+                            bookmark.optString("category", "General"),
+                            bookmark.optString("author", ""),
+                            bookmark.optString("hero_image_url", bookmark.optString("image_url", "")),
+                            R.drawable.placeholder_image,
+                            bookmark.optString("created_at", ""),
+                            true
+                        );
+                    }
+                    
+                    if (article != null) {
+                        article.setBookmarked(true);
+                        savedArticlesList.add(article);
+                        android.util.Log.d("SavedFragment", "Added article: " + article.getTitle());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e("SavedFragment", "Error parsing bookmarks", e);
+            e.printStackTrace();
+        }
+        
+        android.util.Log.d("SavedFragment", "Total articles loaded: " + savedArticlesList.size());
+        
         if (savedArticlesList.isEmpty()) {
             savedNewsRecyclerView.setVisibility(View.GONE);
             emptyStateText.setVisibility(View.VISIBLE);
@@ -132,6 +243,42 @@ public class SavedFragment extends Fragment {
             savedNewsRecyclerView.setVisibility(View.VISIBLE);
             emptyStateText.setVisibility(View.GONE);
         }
+
+        savedNewsAdapter.notifyDataSetChanged();
+    }
+    
+    private Article parseArticleFromJson(JSONObject articleJson) {
+        try {
+            String id = articleJson.optString("id", "");
+            String title = articleJson.optString("title", "Unknown Title");
+            String summary = articleJson.optString("summary", "");
+            String content = articleJson.optString("content", "");
+            
+            String source = articleJson.optString("source", "");
+            if (source.isEmpty()) {
+                source = articleJson.optString("source_url", "Unknown Source");
+            }
+            
+            String category = articleJson.optString("category", "General");
+            String author = articleJson.optString("author", "Unknown Author");
+            String imageUrl = articleJson.optString("hero_image_url", "");
+            String createdAt = articleJson.optString("created_at", "");
+            
+            int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
+            
+            return new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, createdAt, true);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void loadMockBookmarks() {
+        // Clear existing bookmarks
+        savedArticlesList.clear();
+
+        // Show empty state since we don't have mock data anymore
+        savedNewsRecyclerView.setVisibility(View.GONE);
+        emptyStateText.setVisibility(View.VISIBLE);
 
         savedNewsAdapter.notifyDataSetChanged();
     }

@@ -1,4 +1,4 @@
-package com.example.newsapplication.adapter;
+package com.example.newsapplication.adapter.breaking;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -55,12 +55,21 @@ public class BreakingNewsAdapter extends RecyclerView.Adapter<BreakingNewsAdapte
             holder.categoryTextView.setText(article.getCategory());
         }
 
-        // Load image from local resources for frontend-only implementation
-        if (holder.imageView != null && article.getImageResId() != 0) {
-            holder.imageView.setImageResource(article.getImageResId());
-        } else {
-            // Set default placeholder if no image resource is available
-            holder.imageView.setImageResource(R.drawable.ic_launcher_foreground);
+        // Load image from URL using Picasso
+        if (holder.imageView != null) {
+            if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
+                // Load image from URL with proper configuration
+                com.squareup.picasso.Picasso.get()
+                    .load(article.getImageUrl())
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .fit()
+                    .centerCrop()
+                    .into(holder.imageView);
+            } else {
+                // Set placeholder if no URL is available
+                holder.imageView.setImageResource(R.drawable.placeholder_image);
+            }
         }
 
         // Handle item click

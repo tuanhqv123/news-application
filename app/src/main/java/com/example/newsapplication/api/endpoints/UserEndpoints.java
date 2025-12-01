@@ -35,4 +35,16 @@ public class UserEndpoints {
     public void unbanUser(String userId, ApiClient.ApiCallback<JSONObject> callback) {
         apiClient.put(ApiConfig.API_VERSION + "/users/admin/unban/" + userId, null, callback);
     }
+
+    public void changePassword(JSONObject requestBody, ApiClient.ApiCallback<JSONObject> callback) {
+        apiClient.put(ApiConfig.API_VERSION + "/users/change-password", requestBody, callback);
+    }
+
+    public void updateProfile(JSONObject requestBody, ApiClient.ApiCallback<JSONObject> callback) {
+        apiClient.put(ApiConfig.API_VERSION + "/users/profile", requestBody, callback);
+    }
+
+    public void updateAuthProfile(JSONObject requestBody, ApiClient.ApiCallback<JSONObject> callback) {
+        apiClient.put("/api/v1/auth/me", requestBody, callback);
+    }
 }

@@ -14,4 +14,7 @@
     <color name="blue">#0866FF</color>
     <color name="gray">#969696</color>
     <color name="gray_light">#DDDDDD</color>
+    <color name="dark_gray">#666666</color>
+    <color name="primary">#F39E3A</color>
+    <color name="primary_dark">#D68A2D</color>
 </resources>

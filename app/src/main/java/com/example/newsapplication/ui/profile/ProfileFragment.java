@@ -16,12 +16,16 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.newsapplication.MainActivity;
 import com.example.newsapplication.R;
 import com.example.newsapplication.auth.UserSessionManager;
+import com.example.newsapplication.auth.AuthService;
+import com.example.newsapplication.auth.EditProfileDialog;
 import com.example.newsapplication.databinding.FragmentProfileBinding;
+import org.json.JSONObject;
 
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
     private UserSessionManager sessionManager;
+    private EditProfileDialog editProfileDialog;
     private LinearLayout loginButtonContainer;
     private ImageView userAvatar;
     private TextView userName;
@@ -34,14 +38,20 @@ public class ProfileFragment extends Fragment {
         binding = FragmentProfileBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // Initialize session manager
+        // Initialize session manager and auth service
         sessionManager = new UserSessionManager(getContext());
+        AuthService authService = new AuthService(getContext());
 
         initViews();
         setupClickListeners();
 
-        // Always show profile UI (no login required)
-        showLoggedInState();
+        // Check login status
+        if (sessionManager.isLoggedIn()) {
+            // User is logged in, show profile content directly
+            showLoggedInState();
+        } else {
+            showLoggedOutState();
+        }
 
         return root;
     }
@@ -56,29 +66,32 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // Login button click
-        loginButtonContainer.setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity) {
-                MainActivity mainActivity = (MainActivity) getActivity();
-                mainActivity.showLoginDialog();
+        // Profile menu items with role-based behavior
+        binding.createPostItem.setOnClickListener(v -> {
+            if (sessionManager.isAuthor() || sessionManager.isAdmin()) {
+                Toast.makeText(getContext(), "Create new article", Toast.LENGTH_SHORT).show();
+                // TODO: Navigate to article creation screen
+            } else {
+                Toast.makeText(getContext(), "Only authors and admins can create posts", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Profile menu items
-        binding.createPostItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Create Post clicked", Toast.LENGTH_SHORT).show();
-        });
-
         binding.myArticlesItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "My Articles clicked", Toast.LENGTH_SHORT).show();
+            if (sessionManager.isAuthor() || sessionManager.isAdmin()) {
+                Toast.makeText(getContext(), "My Articles", Toast.LENGTH_SHORT).show();
+                // TODO: Navigate to user's articles
+            } else {
+                Toast.makeText(getContext(), "Only authors and admins can view their articles", Toast.LENGTH_SHORT).show();
+            }
         });
 
         binding.settingsItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Settings clicked", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Settings", Toast.LENGTH_SHORT).show();
+            // TODO: Open settings screen
         });
 
         binding.editProfileItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Edit Profile clicked", Toast.LENGTH_SHORT).show();
+            showEditProfileDialog();
         });
 
         // User avatar click
@@ -113,10 +126,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void showLoggedOutState() {
-        // Show login UI
-        loginButtonContainer.setVisibility(View.VISIBLE);
+        // Show empty profile state
+        loginButtonContainer.setVisibility(View.GONE);
         profileContent.setVisibility(View.GONE);
         profileMenuItems.setVisibility(View.GONE);
+        
+
     }
 
     private void showLoggedInState() {
@@ -125,17 +140,63 @@ public class ProfileFragment extends Fragment {
         profileContent.setVisibility(View.VISIBLE);
         profileMenuItems.setVisibility(View.VISIBLE);
 
-        // Set user data and button text based on login state
-        if (sessionManager.isLoggedIn()) {
-            userName.setText(sessionManager.getUserName());
-            userEmail.setText(sessionManager.getUserEmail());
-            binding.authButton.setText("Log Out");
-            binding.authButton.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
+        // Set user data
+        String displayName = sessionManager.getUserName();
+        String email = sessionManager.getUserEmail();
+        String role = sessionManager.getUserRole();
+        
+        userName.setText(displayName.isEmpty() ? email.split("@")[0] : displayName);
+        userEmail.setText(email);
+        binding.authButton.setText("Log Out");
+        binding.authButton.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
+        
+        // Show/hide menu items based on role
+        updateMenuItemsByRole(role);
+    }
+
+    private void updateMenuItemsByRole(String role) {
+        // Show/hide menu items based on role
+        if (sessionManager.isAuthor() || sessionManager.isAdmin()) {
+            binding.createPostItem.setVisibility(View.VISIBLE);
+            binding.myArticlesItem.setVisibility(View.VISIBLE);
         } else {
-            userName.setText("Guest User");
-            userEmail.setText("guest@example.com");
-            binding.authButton.setText("Login");
-            binding.authButton.setTextColor(getResources().getColor(android.R.color.white, null));
+            binding.createPostItem.setVisibility(View.GONE);
+            binding.myArticlesItem.setVisibility(View.GONE);
+        }
+        
+        binding.settingsItem.setVisibility(View.VISIBLE);
+        binding.editProfileItem.setVisibility(View.VISIBLE);
+    }
+
+    private void showEditProfileDialog() {
+        editProfileDialog = new EditProfileDialog(
+            getActivity(),
+            getChildFragmentManager(),
+            new EditProfileDialog.ProfileUpdateListener() {
+                @Override
+                public void onProfileUpdated(String displayName, String avatarBase64) {
+                    // Update UI with new data - local update only, no API call
+                    showLoggedInState();
+                    Toast.makeText(getContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onPasswordChanged() {
+                    // Password change completed successfully
+                    Toast.makeText(getContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
+                }
+            });
+        
+        editProfileDialog.show();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        // Handle image picker result from edit profile dialog
+        if (editProfileDialog != null) {
+            editProfileDialog.handleImageResult(requestCode, resultCode, data);
         }
     }
 

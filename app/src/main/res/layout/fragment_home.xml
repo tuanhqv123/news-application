@@ -74,7 +74,7 @@
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:background="@drawable/tab_background"
             android:orientation="horizontal"
@@ -120,6 +120,50 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <!-- Following Section (channels user follows) - Initially Hidden -->
+        <LinearLayout
+            android:id="@+id/followingContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tabLayout">
+
+            <TextView
+                android:id="@+id/followingTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Channels You Follow"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/followingChannelsRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:nestedScrollingEnabled="false" />
+
+            <TextView
+                android:id="@+id/noFollowingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="24dp"
+                android:text="You haven't followed any channels yet.\nExplore channels to follow!"
+                android:textColor="@color/gray"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
         <!-- Breaking News Section -->
         <TextView
             android:id="@+id/breakingNewsTitle"
@@ -127,7 +171,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="24dp"
-                        android:textStyle="bold"
+            android:textStyle="bold"
             android:text="Breaking News"
             android:textColor="#000000"
             android:textSize="16sp"
@@ -139,7 +183,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
-                        android:text="See More"
+            android:text="See More"
             android:textColor="#0866FF"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -166,7 +210,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="24dp"
-                        android:textStyle="bold"
+            android:textStyle="bold"
             android:text="Popular"
             android:textColor="#000000"
             android:textSize="16sp"
@@ -187,7 +231,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/popularNewsTitle"
-            tools:listitem="@layout/item_news_card" />
+            tools:listitem="@layout/item_news_card_hero" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
