@@ -49,7 +49,7 @@
                 android:layout_width="28dp"
                 android:layout_height="25dp"
                 android:src="@drawable/ic_home_filled"
-                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
                 android:contentDescription="Home" />
 
             <TextView
@@ -79,7 +79,7 @@
                 android:layout_width="25dp"
                 android:layout_height="25dp"
                 android:src="@drawable/ic_explore_outline"
-                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
                 android:alpha="0.5"
                 android:contentDescription="Explore" />
 
@@ -111,7 +111,7 @@
                 android:layout_width="19dp"
                 android:layout_height="25dp"
                 android:src="@drawable/ic_bookmark_outline"
-                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
                 android:alpha="0.5"
                 android:contentDescription="Saved" />
 
@@ -143,7 +143,7 @@
                 android:layout_width="25dp"
                 android:layout_height="25dp"
                 android:src="@drawable/ic_profile_outline"
-                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
                 android:alpha="0.5"
                 android:contentDescription="Profile" />
 

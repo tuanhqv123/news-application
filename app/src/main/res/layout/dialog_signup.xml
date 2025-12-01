@@ -31,7 +31,7 @@
             android:layout_alignParentEnd="true"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="#666666" />
+            app:tint="#666666" />
 
     </RelativeLayout>
 
