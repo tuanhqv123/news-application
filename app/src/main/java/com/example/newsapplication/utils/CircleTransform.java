@@ -8,9 +8,7 @@ import android.graphics.Shader;
 
 import com.squareup.picasso.Transformation;
 
-/**
- * Picasso transformation to make images circular
- */
+// Picasso transformation to make images circular
 public class CircleTransform implements Transformation {
     
     @Override

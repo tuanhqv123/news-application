@@ -40,8 +40,6 @@ import java.util.List;
 
 public class HomeFragment extends Fragment {
 
-    private static final String TAG = "HomeFragment";
-
     private FragmentHomeBinding binding;
     private NewsAdapter newsAdapter;
     private BreakingNewsAdapter breakingNewsAdapter;
@@ -363,7 +361,6 @@ public class HomeFragment extends Fragment {
                 if (response.isSuccess() && response.getData() != null) {
                     parseFollowedChannels(response.getData());
                 } else {
-                    android.util.Log.e(TAG, "Failed to load followed channels: " + response.getErrorMessage());
                     noFollowingText.setVisibility(View.VISIBLE);
                     noFollowingText.setText("You haven't followed any channels yet.\nExplore channels to follow!");
                     followingChannelsRecyclerView.setVisibility(View.GONE);
@@ -439,8 +436,6 @@ public class HomeFragment extends Fragment {
     }
     
     private void loadBreakingNews() {
-        android.util.Log.d(TAG, "=== Loading breaking news from category 9 ===");
-        
         if (newsRepository != null) {
             newsRepository.getArticles(1, 5, 9, new NewsRepository.RepositoryCallback<JSONObject>() {
                 @Override
@@ -460,28 +455,19 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadArticlesFromCategory(int categoryId) {
-        android.util.Log.d(TAG, "=== Loading articles from category: " + categoryId + " ===");
-        
         if (newsRepository != null) {
             newsRepository.getArticles(1, 20, categoryId, new NewsRepository.RepositoryCallback<JSONObject>() {
                 @Override
                 public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                    android.util.Log.d(TAG, "API Response received - Success: " + response.isSuccess());
-                    
                     if (response.isSuccess() && response.getData() != null) {
-                        // Clear popular news only (breaking news loaded separately)
                         popularNewsList.clear();
                         
-                        // Parse articles using utility
                         List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
                         popularNewsList.addAll(articles);
                         
-                        // Update UI
                         if (newsAdapter != null) {
                             newsAdapter.notifyDataSetChanged();
                         }
-                    } else {
-                        android.util.Log.e(TAG, "Failed to load articles: " + response.getErrorMessage());
                     }
                 }
             });
@@ -489,29 +475,19 @@ public class HomeFragment extends Fragment {
     }
     
     private void loadArticlesFromAPI() {
-        android.util.Log.d(TAG, "=== Starting loadArticlesFromAPI() ===");
-        
         if (newsRepository != null) {
-            android.util.Log.d(TAG, "Calling newsRepository.getArticles()");
             newsRepository.getArticles(new NewsRepository.RepositoryCallback<JSONObject>() {
                 @Override
                 public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                    android.util.Log.d(TAG, "API Response received - Success: " + response.isSuccess());
-                    
                     if (response.isSuccess() && response.getData() != null) {
-                        // Clear popular news only (breaking news loaded separately)
                         popularNewsList.clear();
                         
-                        // Parse articles using utility
                         List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
                         popularNewsList.addAll(articles);
                         
-                        // Update UI
                         if (newsAdapter != null) {
                             newsAdapter.notifyDataSetChanged();
                         }
-                    } else {
-                        android.util.Log.e(TAG, "Failed to load articles: " + response.getErrorMessage());
                     }
                 }
             });
@@ -526,12 +502,8 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
                     if (response.isSuccess() && response.getData() != null) {
-                        android.util.Log.d(TAG, "Bookmarks loaded from API");
-                        
-                        // Parse bookmarked IDs using utility
                         java.util.Set<String> bookmarkedIds = JsonParsingUtils.parseBookmarkedIds(response.getData());
                         
-                        // Update bookmark status for articles in current lists
                         for (Article article : breakingNewsList) {
                             if (bookmarkedIds.contains(article.getId())) {
                                 article.setBookmarked(true);
@@ -544,15 +516,12 @@ public class HomeFragment extends Fragment {
                             }
                         }
                         
-                        // Refresh adapters
                         if (breakingNewsAdapter != null) {
                             breakingNewsAdapter.notifyDataSetChanged();
                         }
                         if (newsAdapter != null) {
                             newsAdapter.notifyDataSetChanged();
                         }
-                    } else {
-                        android.util.Log.e(TAG, "Failed to load bookmarks: " + response.getErrorMessage());
                     }
                 }
             });
@@ -560,7 +529,6 @@ public class HomeFragment extends Fragment {
     }
 
     public void switchToSource(String source) {
-        // For frontend-only implementation, source switching is handled by different mock data
         this.currentSource = source;
         loadArticlesFromAPI();
     }

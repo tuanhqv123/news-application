@@ -5,9 +5,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-/**
- * Utility class for date formatting
- */
+// Utility class for date formatting
 public class DateUtils {
 
     private static final String[] MONTH_NAMES = {
@@ -15,22 +13,16 @@ public class DateUtils {
         "July", "August", "September", "October", "November", "December"
     };
 
-    /**
-     * Format ISO date string to human readable format (e.g., "April, 21")
-     * @param isoDate ISO date string like "2025-09-25T01:00:00+00:00"
-     * @return Formatted date string like "September, 25"
-     */
+    // Format ISO date string to human readable format (e.g., "April, 21")
     public static String formatToMonthDay(String isoDate) {
         if (isoDate == null || isoDate.isEmpty()) {
             return "";
         }
         
         try {
-            // Parse ISO date
             SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
             isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             
-            // Handle timezone offset
             String dateStr = isoDate;
             if (dateStr.contains("+")) {
                 dateStr = dateStr.substring(0, dateStr.indexOf("+"));
@@ -41,12 +33,10 @@ public class DateUtils {
             Date date = isoFormat.parse(dateStr);
             if (date == null) return "";
             
-            // Format to "Month, day"
             SimpleDateFormat outputFormat = new SimpleDateFormat("MMMM, d", Locale.US);
             return outputFormat.format(date);
             
         } catch (Exception e) {
-            // Fallback: try to extract month and day manually
             try {
                 String[] parts = isoDate.split("T")[0].split("-");
                 if (parts.length >= 3) {
@@ -57,17 +47,12 @@ public class DateUtils {
                     }
                 }
             } catch (Exception ex) {
-                // Ignore
             }
             return "";
         }
     }
 
-    /**
-     * Format ISO date string to short format (e.g., "Apr, 21")
-     * @param isoDate ISO date string
-     * @return Short formatted date string
-     */
+    // Format ISO date string to short format (e.g., "Apr, 21")
     public static String formatToShortMonthDay(String isoDate) {
         if (isoDate == null || isoDate.isEmpty()) {
             return "";
@@ -95,11 +80,7 @@ public class DateUtils {
         }
     }
 
-    /**
-     * Format ISO date string to full format (e.g., "Dec 2, 2025")
-     * @param isoDate ISO date string
-     * @return Full formatted date string
-     */
+    // Format ISO date string to full format (e.g., "Dec 2, 2025")
     public static String formatToFullDate(String isoDate) {
         if (isoDate == null || isoDate.isEmpty()) {
             return "";
@@ -109,7 +90,6 @@ public class DateUtils {
             SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
             isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             
-            // Remove milliseconds and timezone
             String dateStr = isoDate.split("\\.")[0];
             if (dateStr.contains("+")) {
                 dateStr = dateStr.substring(0, dateStr.indexOf("+"));
@@ -126,11 +106,7 @@ public class DateUtils {
         }
     }
 
-    /**
-     * Get relative time string (e.g., "2 hours ago", "Yesterday")
-     * @param isoDate ISO date string
-     * @return Relative time string
-     */
+    // Get relative time string (e.g., "2 hours ago", "Yesterday")
     public static String getRelativeTime(String isoDate) {
         if (isoDate == null || isoDate.isEmpty()) {
             return "";

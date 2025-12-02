@@ -73,7 +73,6 @@ public class EditProfileDialog extends AppCompatDialog {
         View view = inflater.inflate(R.layout.dialog_edit_profile, null);
         setContentView(view);
 
-        // Register with MainActivity to receive image picker results
         if (activity instanceof com.example.newsapplication.MainActivity) {
             ((com.example.newsapplication.MainActivity) activity).setEditProfileDialog(this);
         }
@@ -85,7 +84,6 @@ public class EditProfileDialog extends AppCompatDialog {
     
     @Override
     public void dismiss() {
-        // Unregister from MainActivity
         if (activity instanceof com.example.newsapplication.MainActivity) {
             ((com.example.newsapplication.MainActivity) activity).setEditProfileDialog(null);
         }
@@ -100,7 +98,6 @@ public class EditProfileDialog extends AppCompatDialog {
         cancelButton = view.findViewById(R.id.cancelButton);
         saveButton = view.findViewById(R.id.saveButton);
         
-        // Close button
         View closeButton = view.findViewById(R.id.closeButton);
         if (closeButton != null) {
             closeButton.setOnClickListener(v -> dismiss());
@@ -125,7 +122,6 @@ public class EditProfileDialog extends AppCompatDialog {
             displayNameEditText.setText(userName);
             emailEditText.setText(email);
             
-            // Load current avatar with circular transform
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 currentAvatarUrl = avatarUrl;
                 Picasso.get()
@@ -139,7 +135,6 @@ public class EditProfileDialog extends AppCompatDialog {
     }
 
     private void openImagePicker() {
-        // Use ACTION_GET_CONTENT which works better on all Android versions
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -162,16 +157,12 @@ public class EditProfileDialog extends AppCompatDialog {
     }
 
     public void handleImageResult(int requestCode, int resultCode, Intent data) {
-        android.util.Log.d("EditProfileDialog", "handleImageResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
-        
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
             Uri imageUri = data.getData();
-            android.util.Log.d("EditProfileDialog", "Image URI: " + imageUri);
             
             if (imageUri != null) {
                 selectedImageUri = imageUri;
                 try {
-                    // Use ImageDecoder for newer Android versions, fallback to MediaStore
                     Bitmap bitmap;
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                         android.graphics.ImageDecoder.Source source = android.graphics.ImageDecoder.createSource(getContext().getContentResolver(), imageUri);
@@ -181,14 +172,11 @@ public class EditProfileDialog extends AppCompatDialog {
                     }
                     
                     if (bitmap != null) {
-                        // Apply circular crop to preview
                         Bitmap circularBitmap = getCircularBitmap(bitmap);
                         avatarImageView.setImageBitmap(circularBitmap);
-                        android.util.Log.d("EditProfileDialog", "Image loaded successfully");
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    android.util.Log.e("EditProfileDialog", "Failed to load image: " + e.getMessage());
                     Toast.makeText(getContext(), "Failed to load image", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -224,51 +212,37 @@ public class EditProfileDialog extends AppCompatDialog {
             return;
         }
         
-        android.util.Log.d("EditProfileDialog", "=== Starting saveProfile() ===");
-        android.util.Log.d("EditProfileDialog", "Display name: " + displayName);
-        
-        // Disable save button while processing
         saveButton.setEnabled(false);
         
-        // If image was selected, upload it first
         if (selectedImageUri != null) {
-            android.util.Log.d("EditProfileDialog", "Uploading image first...");
             Toast.makeText(getContext(), "Uploading image...", Toast.LENGTH_SHORT).show();
             
             mediaEndpoints.uploadFile(selectedImageUri, "avatar.jpg", new com.example.newsapplication.api.endpoints.MediaEndpoints.UploadCallback() {
                 @Override
                 public void onSuccess(String fileUrl) {
-                    android.util.Log.d("EditProfileDialog", "Image uploaded, URL: " + fileUrl);
                     currentAvatarUrl = fileUrl;
-                    // Now update profile with the image URL
                     updateProfileWithApi(displayName, currentAvatarUrl);
                 }
 
                 @Override
                 public void onError(String errorMessage) {
-                    android.util.Log.e("EditProfileDialog", "Image upload failed: " + errorMessage);
                     saveButton.setEnabled(true);
                     Toast.makeText(getContext(), "Failed to upload image: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
         } else {
-            // No image selected, just update profile
             updateProfileWithApi(displayName, currentAvatarUrl);
         }
     }
     
     private void updateProfileWithApi(String displayName, String avatarUrl) {
-        android.util.Log.d("EditProfileDialog", "Updating profile - displayName: " + displayName + ", avatarUrl: " + avatarUrl);
-        
         if (newsRepository != null) {
             newsRepository.updateProfile(displayName, avatarUrl, new com.example.newsapplication.repository.NewsRepository.RepositoryCallback<org.json.JSONObject>() {
                 @Override
                 public void onResult(com.example.newsapplication.api.ApiResponse<org.json.JSONObject> response) {
                     saveButton.setEnabled(true);
-                    android.util.Log.d("EditProfileDialog", "Profile update API response - Success: " + response.isSuccess() + ", Error: " + response.getErrorMessage());
                     
                     if (response.isSuccess()) {
-                        android.util.Log.d("EditProfileDialog", "Profile update successful");
                         sessionManager.updateUserName(displayName);
                         
                         if (listener != null) {

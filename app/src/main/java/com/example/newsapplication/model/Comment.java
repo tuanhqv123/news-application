@@ -2,9 +2,7 @@ package com.example.newsapplication.model;
 
 import org.json.JSONObject;
 
-/**
- * Model class representing a comment on an article.
- */
+// Represents a comment on an article
 public class Comment {
     private int id;
     private String articleId;
@@ -28,11 +26,7 @@ public class Comment {
         this.createdAt = createdAt;
     }
 
-    /**
-     * Create a Comment from JSON response
-     * API Response: {"id": 9, "article_id": "...", "user_id": "...", "body": "haha", 
-     *                "created_at": "...", "profile": {"display_name": "...", "avatar_url": "..."}}
-     */
+    // Create a Comment from JSON response
     public static Comment fromJson(JSONObject json) {
         Comment comment = new Comment();
         try {
@@ -43,7 +37,6 @@ public class Comment {
             comment.createdAt = json.optString("created_at", "");
             comment.updatedAt = json.optString("updated_at", "");
             
-            // Parse profile object
             JSONObject profileObj = json.optJSONObject("profile");
             if (profileObj != null) {
                 comment.userName = profileObj.optString("display_name", "Anonymous");
@@ -123,15 +116,12 @@ public class Comment {
         this.updatedAt = updatedAt;
     }
 
-    /**
-     * Get a formatted time ago string
-     */
+    // Get a formatted time ago string
     public String getTimeAgo() {
         if (createdAt == null || createdAt.isEmpty()) {
             return "";
         }
         try {
-            // Parse ISO 8601 date
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
             java.util.Date date = sdf.parse(createdAt.replace("Z", "").split("\\.")[0]);
             if (date == null) return createdAt;

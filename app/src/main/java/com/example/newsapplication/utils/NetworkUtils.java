@@ -9,7 +9,6 @@ public class NetworkUtils {
         if (error.networkResponse != null) {
             int statusCode = error.networkResponse.statusCode;
             
-            // First try to get error detail from response data
             if (error.networkResponse.data != null) {
                 try {
                     JSONObject errorData = new JSONObject(new String(error.networkResponse.data));
@@ -17,11 +16,9 @@ public class NetworkUtils {
                         return errorData.getString("detail");
                     }
                 } catch (Exception e) {
-                    // If parsing fails, fall back to status codes
                 }
             }
             
-            // Fall back to status code messages if no detail found
             switch (statusCode) {
                 case 400: return "Bad request. Please check your input.";
                 case 401: return "Authentication failed. Please check your credentials.";

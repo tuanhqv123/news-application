@@ -1,19 +1,14 @@
 package com.example.newsapplication.repository;
 
 import android.content.Context;
-import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiResponse;
 import com.example.newsapplication.api.endpoints.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
- * Repository class that acts as a single source of truth for all data operations.
- * Provides a clean API for the UI layer to fetch/manipulate data.
- */
+// Repository class that acts as a single source of truth for all data operations
 public class NewsRepository {
-    private static final String TAG = "NewsRepository";
     private final ApiClient apiClient;
     private final AuthEndpoints authEndpoints;
     private final ArticleEndpoints articleEndpoints;
@@ -43,7 +38,7 @@ public class NewsRepository {
                             apiClient.setAuthToken(token);
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Failed to extract access token from login response", e);
+                        // Token extraction failed
                     }
                 }
                 callback.onResult(response);
@@ -59,12 +54,10 @@ public class NewsRepository {
     // ==================== Articles ====================
 
     public void getArticles(RepositoryCallback<JSONObject> callback) {
-        android.util.Log.d("NewsRepository", "Calling getArticles API");
         articleEndpoints.getArticles(wrapCallback(callback));
     }
 
     public void getArticles(int page, int limit, Integer categoryId, RepositoryCallback<JSONObject> callback) {
-        android.util.Log.d("NewsRepository", "Calling getArticles with page=" + page + ", limit=" + limit + ", categoryId=" + categoryId);
         articleEndpoints.getArticles(page, limit, categoryId, wrapCallback(callback));
     }
 
@@ -114,7 +107,6 @@ public class NewsRepository {
     // ==================== Categories ====================
 
     public void getCategories(RepositoryCallback<JSONObject> callback) {
-        android.util.Log.d("NewsRepository", "Calling getCategories API");
         categoryEndpoints.getCategories(wrapCallback(callback));
     }
 
@@ -162,7 +154,6 @@ public class NewsRepository {
                 requestBody.put("avatar_url", avatarUrl);
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Failed to build updateProfile request body", e);
             callback.onResult(ApiResponse.error("Invalid request data", 0));
             return;
         }

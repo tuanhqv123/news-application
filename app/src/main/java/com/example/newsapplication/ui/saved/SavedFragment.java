@@ -145,7 +145,6 @@ public class SavedFragment extends Fragment {
                 if (response.isSuccess() && response.getData() != null) {
                     loadRealBookmarks(response.getData());
                 } else {
-                    android.util.Log.e("SavedFragment", "Failed to load bookmarks: " + response.getErrorMessage());
                     loadMockBookmarks();
                 }
             }
@@ -153,20 +152,17 @@ public class SavedFragment extends Fragment {
     }
 
     private void loadRealBookmarks(JSONObject data) {
-        android.util.Log.d("SavedFragment", "Bookmarks response: " + data.toString());
         savedArticlesList.clear();
         
         try {
             JSONArray results = null;
             
-            // API response format: {"success":true,"data":{"bookmarks":[{"user_id":"...","article_id":"...","articles":{...}}]}}
             if (data.has("data")) {
                 Object dataObj = data.get("data");
                 if (dataObj instanceof JSONObject) {
                     JSONObject dataJson = (JSONObject) dataObj;
                     if (dataJson.has("bookmarks")) {
                         results = dataJson.getJSONArray("bookmarks");
-                        android.util.Log.d("SavedFragment", "Found bookmarks in data.bookmarks");
                     } else if (dataJson.has("results")) {
                         results = dataJson.getJSONArray("results");
                     }
@@ -179,34 +175,25 @@ public class SavedFragment extends Fragment {
                 results = data.getJSONArray("results");
             }
             
-            android.util.Log.d("SavedFragment", "Found " + (results != null ? results.length() : 0) + " bookmarks");
-            
             if (results != null && results.length() > 0) {
                 for (int i = 0; i < results.length(); i++) {
                     JSONObject bookmark = results.getJSONObject(i);
-                    android.util.Log.d("SavedFragment", "Bookmark item " + i + ": " + bookmark.toString());
                     
                     Article article = null;
                     
-                    // Check for "articles" key (API response uses "articles" not "article")
                     if (bookmark.has("articles") && !bookmark.isNull("articles")) {
                         JSONObject articleJson = bookmark.getJSONObject("articles");
                         article = parseArticleFromJson(articleJson);
-                        android.util.Log.d("SavedFragment", "Parsed article from 'articles': " + (article != null ? article.getTitle() : "null"));
                     }
-                    // Check if article data is embedded in the bookmark as "article"
                     else if (bookmark.has("article") && !bookmark.isNull("article")) {
                         JSONObject articleJson = bookmark.getJSONObject("article");
                         article = parseArticleFromJson(articleJson);
                     } 
-                    // Check if this is the article directly (not wrapped)
                     else if (bookmark.has("title") && bookmark.has("id")) {
                         article = parseArticleFromJson(bookmark);
                     }
-                    // Check for article_id and try to use other available fields
                     else if (bookmark.has("article_id")) {
                         String articleId = bookmark.optString("article_id");
-                        // Create a minimal article with available data
                         article = new Article(
                             articleId,
                             bookmark.optString("title", "Saved Article"),
@@ -225,16 +212,11 @@ public class SavedFragment extends Fragment {
                     if (article != null) {
                         article.setBookmarked(true);
                         savedArticlesList.add(article);
-                        android.util.Log.d("SavedFragment", "Added article: " + article.getTitle());
                     }
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e("SavedFragment", "Error parsing bookmarks", e);
-            e.printStackTrace();
         }
-        
-        android.util.Log.d("SavedFragment", "Total articles loaded: " + savedArticlesList.size());
         
         if (savedArticlesList.isEmpty()) {
             savedNewsRecyclerView.setVisibility(View.GONE);
@@ -273,20 +255,15 @@ public class SavedFragment extends Fragment {
     }
 
     private void loadMockBookmarks() {
-        // Clear existing bookmarks
         savedArticlesList.clear();
-
-        // Show empty state since we don't have mock data anymore
         savedNewsRecyclerView.setVisibility(View.GONE);
         emptyStateText.setVisibility(View.VISIBLE);
-
         savedNewsAdapter.notifyDataSetChanged();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Reload bookmarks when returning to this fragment
         if (sessionManager != null && sessionManager.isLoggedIn()) {
             loadSavedArticles();
         }

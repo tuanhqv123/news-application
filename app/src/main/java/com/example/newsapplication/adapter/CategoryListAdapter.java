@@ -14,9 +14,7 @@ import com.example.newsapplication.R;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Adapter for displaying categories in a vertical list.
- */
+// Adapter for displaying categories in a vertical list
 public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapter.CategoryViewHolder> {
 
     private List<Category> categories;

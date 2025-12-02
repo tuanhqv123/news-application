@@ -16,9 +16,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Adapter for displaying comments in a RecyclerView.
- */
+// Adapter for displaying comments in a RecyclerView
 public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.CommentViewHolder> {
 
     private List<Comment> comments;

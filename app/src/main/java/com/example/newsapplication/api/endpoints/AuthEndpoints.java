@@ -1,17 +1,14 @@
 package com.example.newsapplication.api.endpoints;
 
-import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiConfig;
 import com.example.newsapplication.api.ApiResponse;
 import com.example.newsapplication.model.request.UserLogin;
 import com.example.newsapplication.model.request.UserRegister;
-import com.example.newsapplication.model.request.UserProfile;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class AuthEndpoints {
-    private static final String TAG = "AuthEndpoints";
     private final ApiClient apiClient;
 
     public AuthEndpoints(ApiClient apiClient) {
@@ -46,7 +43,6 @@ public class AuthEndpoints {
                 requestBody.put("avatar_url", avatarUrl);
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Failed to build updateProfile request body", e);
             callback.onError(ApiResponse.error("Invalid request data", 0));
             return;
         }
@@ -63,7 +59,6 @@ public class AuthEndpoints {
                 requestBody.put("channel_id", channelId);
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Failed to build inviteUser request body", e);
             callback.onError(ApiResponse.error("Invalid request data", 0));
             return;
         }
@@ -71,7 +66,6 @@ public class AuthEndpoints {
     }
 
     public void setUserRole(String userId, String role, ApiClient.ApiCallback<JSONObject> callback) {
-        // Query params
         apiClient.post(ApiConfig.API_VERSION + "/auth/admin/set-role?user_id=" + userId + "&role=" + role, null, callback);
     }
 

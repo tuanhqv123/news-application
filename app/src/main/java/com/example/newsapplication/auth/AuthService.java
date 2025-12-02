@@ -32,7 +32,6 @@ public class AuthService {
                 try {
                     JSONObject data = response.getData();
                     
-                    // Handle the actual API response format: {"success":true,"data":{"access_token":"...","user":{...}}}
                     if (data != null && data.has("success") && data.getBoolean("success") && data.has("data")) {
                         JSONObject responseData = data.getJSONObject("data");
                         
@@ -45,33 +44,27 @@ public class AuthService {
                         String role = userData.optString("role", "reader");
                         String avatarUrl = userData.optString("avatar_url", null);
                         
-                        // Store token and session data
                         apiClient.setAuthToken(token);
                         if (refreshToken != null) {
                             sessionManager.createLoginSession(userEmail, displayName, role, token, refreshToken);
                         } else {
                             sessionManager.createLoginSession(userEmail, displayName, role, token);
                         }
-                        // Save avatar URL
                         if (avatarUrl != null && !avatarUrl.isEmpty()) {
                             sessionManager.setAvatarUrl(avatarUrl);
                         }
                         
-                        // Also get the success message from response
                         String message = data.optString("message", "Login successful");
                         
-                        // Create response object with user data and message
                         JSONObject responseWithMessage = new JSONObject();
                         try {
                             responseWithMessage.put("user", userData);
                             responseWithMessage.put("message", message);
                         } catch (JSONException e) {
-                            // Use original response if this fails
                         }
                         
                         callback.onSuccess(responseWithMessage);
                     } else if (data != null && data.has("access_token")) {
-                        // Fallback to simple format
                         String token = data.getString("access_token");
                         apiClient.setAuthToken(token);
                         sessionManager.createLoginSession(email, email.split("@")[0], "reader", token);
@@ -90,23 +83,18 @@ public class AuthService {
                 String errorMessage = error.getErrorMessage();
                 
                 if (error.getData() != null) {
-                    // Check if response has success field first
                     if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        // This is an error response with success=false, try to get detail
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     } else {
-                        // Try to extract 'detail' key if it exists (for direct errors)
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     }
@@ -129,23 +117,18 @@ public class AuthService {
                 String errorMessage = error.getErrorMessage();
                 
                 if (error.getData() != null) {
-                    // Check if response has success field first
                     if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        // This is an error response with success=false, try to get detail
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     } else {
-                        // Try to extract 'detail' key if it exists (for direct errors)
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     }
@@ -167,7 +150,6 @@ public class AuthService {
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                // Even if logout fails on server, clear local session
                 sessionManager.logoutUser();
                 apiClient.clearAuthToken();
                 callback.onSuccess(null);
@@ -183,7 +165,6 @@ public class AuthService {
                     JSONObject data = response.getData();
                     JSONObject userData = data;
                     
-                    // Handle nested response: { "success": true, "data": { "user": {...} } }
                     if (data != null && data.has("success") && data.optBoolean("success", false) && data.has("data")) {
                         JSONObject responseData = data.getJSONObject("data");
                         if (responseData.has("user")) {
@@ -213,23 +194,18 @@ public class AuthService {
                 String errorMessage = error.getErrorMessage();
                 
                 if (error.getData() != null) {
-                    // Check if response has success field first
                     if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        // This is an error response with success=false, try to get detail
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     } else {
-                        // Try to extract 'detail' key if it exists (for direct errors)
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     }
@@ -240,24 +216,7 @@ public class AuthService {
         });
     }
 
-    // REMOVED - Use NewsRepository.updateProfile instead which has correct JSON format
-    // public void updateProfile(String displayName, String avatarUrl, AuthResultCallback callback) {
-    //     authEndpoints.updateProfile(displayName, avatarUrl, new ApiClient.ApiCallback<JSONObject>() {
-    //         @Override
-    //             public void onSuccess(ApiResponse<JSONObject> response) {
-    //                 // Update local session data
-    //                 String currentEmail = sessionManager.getUserEmail();
-    //                 String currentRole = sessionManager.getUserRole();
-    //                 sessionManager.createLoginSession(currentEmail, displayName, currentRole);
-    //                 callback.onSuccess(response.getData());
-    //             }
 
-    //             @Override
-    //             public void onError(ApiResponse<JSONObject> error) {
-    //                 callback.onError(error.getErrorMessage());
-    //             }
-    //         });
-    // }
 
     public boolean isLoggedIn() {
         return sessionManager.isLoggedIn();
@@ -296,7 +255,6 @@ public class AuthService {
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                // Refresh token failed, user needs to login again
                 sessionManager.logoutUser();
                 apiClient.clearAuthToken();
                 callback.onError("Session expired. Please login again.");
@@ -313,13 +271,11 @@ public class AuthService {
         getCurrentUser(new AuthResultCallback() {
             @Override
             public void onSuccess(JSONObject response) {
-                // Token is valid if we can get user data
                 callback.onSuccess(response);
             }
 
             @Override
             public void onError(String errorMessage) {
-                // Token is invalid
                 sessionManager.logoutUser();
                 apiClient.clearAuthToken();
                 callback.onError(errorMessage);
@@ -331,8 +287,6 @@ public class AuthService {
         authEndpoints.getMe(new ApiClient.ApiCallback<JSONObject>() {
             @Override
             public void onSuccess(ApiResponse<JSONObject> response) {
-                // This could be extended to fetch actual bookmark data
-                // For now, just return success
                 callback.onSuccess(response.getData());
             }
 
@@ -341,23 +295,18 @@ public class AuthService {
                 String errorMessage = error.getErrorMessage();
                 
                 if (error.getData() != null) {
-                    // Check if response has success field first
                     if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        // This is an error response with success=false, try to get detail
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     } else {
-                        // Try to extract 'detail' key if it exists (for direct errors)
                         if (error.getData().has("detail")) {
                             try {
                                 errorMessage = error.getData().getString("detail");
                             } catch (JSONException e) {
-                                // Keep original error message if parsing fails
                             }
                         }
                     }

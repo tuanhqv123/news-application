@@ -105,13 +105,10 @@ public class AuthenticationDialog extends Dialog {
         signupLinkText.setOnClickListener(v -> switchToSignup());
 
         forgotPasswordText.setOnClickListener(v -> {
-            // TODO: Implement forgot password functionality
             Toast.makeText(getContext(), "Forgot password functionality coming soon!", Toast.LENGTH_SHORT).show();
         });
 
-        // Google login button
         googleLoginButton.setOnClickListener(v -> {
-            // TODO: Implement Google Sign-In
             Toast.makeText(getContext(), "Google Sign-In coming soon!", Toast.LENGTH_SHORT).show();
         });
     }
@@ -128,9 +125,7 @@ public class AuthenticationDialog extends Dialog {
 
         loginLinkText.setOnClickListener(v -> switchToLogin());
 
-        // Google signup button
         googleSignupButton.setOnClickListener(v -> {
-            // TODO: Implement Google Sign-In
             Toast.makeText(getContext(), "Google Sign-In coming soon!", Toast.LENGTH_SHORT).show();
         });
     }

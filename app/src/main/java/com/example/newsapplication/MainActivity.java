@@ -1,7 +1,6 @@
 package com.example.newsapplication;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -86,13 +85,9 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             binding.savedNavItem.setOnClickListener(v -> {
                 try {
                     if (sessionManager.isLoggedIn()) {
-                        // Navigate to saved fragment
-                        Log.d("MainActivity", "User logged in, navigating to saved");
                         navController.navigate(R.id.navigation_saved);
                         updateNavigationState(NAV_SAVED);
                     } else {
-                        // Show login dialog
-                        Log.d("MainActivity", "User not logged in, showing login dialog");
                         showLoginDialog();
                     }
                 } catch (Exception e) {
@@ -103,13 +98,9 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             binding.profileNavItem.setOnClickListener(v -> {
                 try {
                     if (sessionManager.isLoggedIn()) {
-                        // Navigate to profile fragment
-                        Log.d("MainActivity", "User logged in, navigating to profile");
                         navController.navigate(R.id.navigation_profile);
                         updateNavigationState(NAV_PROFILE);
                     } else {
-                        // Show login dialog
-                        Log.d("MainActivity", "User not logged in, showing login dialog");
                         showLoginDialog();
                     }
                 } catch (Exception e) {
@@ -186,18 +177,14 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             userName = sessionManager.getUserEmail().split("@")[0];
         }
         
-        Log.d("MainActivity", "Auth success for user: " + userName + ", role: " + sessionManager.getUserRole());
         Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
         
-        // Navigate to intended destination after successful login
         navController.navigate(R.id.navigation_saved);
         updateNavigationState(NAV_SAVED);
     }
 
     @Override
     public void onAuthCancelled() {
-        // User closed the dialog without authenticating
-        // No need to show a toast as this is a normal user action
     }
 
 

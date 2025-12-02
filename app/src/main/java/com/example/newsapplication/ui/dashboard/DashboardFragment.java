@@ -48,7 +48,6 @@ import java.util.Set;
 
 public class DashboardFragment extends Fragment {
 
-    private static final String TAG = "DashboardFragment";
     private static final long SEARCH_DEBOUNCE_DELAY = 500;
 
     private FragmentDashboardBinding binding;
@@ -402,7 +401,6 @@ public class DashboardFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing followed channels", e);
         }
     }
 
@@ -450,7 +448,6 @@ public class DashboardFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing categories", e);
         }
         
         if (categories.isEmpty()) {
@@ -513,7 +510,6 @@ public class DashboardFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing channels", e);
         }
         
         channelChipAdapter.setChannels(channels);
@@ -641,7 +637,6 @@ public class DashboardFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing articles", e);
         }
         
         adapter.notifyDataSetChanged();

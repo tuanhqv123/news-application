@@ -33,8 +33,6 @@ import java.util.List;
 
 public class ArticleDetailActivity extends AppCompatActivity {
 
-    private static final String TAG = "ArticleDetailActivity";
-
     private ImageView backImageView;
     private ImageView articleImageView;
     private ImageView bookmarkImageView;
@@ -272,10 +270,8 @@ public class ArticleDetailActivity extends AppCompatActivity {
                                     updateBookmarkIcon();
                                     Toast.makeText(ArticleDetailActivity.this, "Article already bookmarked", Toast.LENGTH_SHORT).show();
                                 } else {
-                                    // Revert if API call fails
                                     currentArticle.setBookmarked(false);
                                     updateBookmarkIcon();
-                                    android.util.Log.e(TAG, "Failed to bookmark article: " + response.getErrorMessage());
                                     Toast.makeText(ArticleDetailActivity.this, "Failed to bookmark article", Toast.LENGTH_SHORT).show();
                                 }
                             }
@@ -290,10 +286,8 @@ public class ArticleDetailActivity extends AppCompatActivity {
                                 updateBookmarkIcon();
                                 Toast.makeText(ArticleDetailActivity.this, "Bookmark removed", Toast.LENGTH_SHORT).show();
                             } else {
-                                // Revert if API call fails
                                 currentArticle.setBookmarked(true);
                                 updateBookmarkIcon();
-                                android.util.Log.e(TAG, "Failed to remove bookmark: " + response.getErrorMessage());
                                 Toast.makeText(ArticleDetailActivity.this, "Failed to remove bookmark", Toast.LENGTH_SHORT).show();
                             }
                         }
@@ -312,9 +306,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
             }
         });
 
-        // Font size icon click listener
         fontSizeIcon.setOnClickListener(v -> {
-            android.util.Log.d(TAG, "Font size icon clicked");
             showFontSizeDialog();
         });
 
@@ -343,12 +335,10 @@ public class ArticleDetailActivity extends AppCompatActivity {
         
         String articleId = currentArticle.getId();
         if (articleId == null || articleId.isEmpty()) {
-            android.util.Log.w(TAG, "No article ID, skipping comments load");
             showNoComments();
             return;
         }
         
-        android.util.Log.d(TAG, "Loading comments for article: " + articleId);
         showCommentsLoading();
         
         newsRepository.getComments(articleId, new NewsRepository.RepositoryCallback<JSONObject>() {
@@ -367,11 +357,9 @@ public class ArticleDetailActivity extends AppCompatActivity {
                             showComments(comments);
                         }
                     } catch (Exception e) {
-                        android.util.Log.e(TAG, "Error parsing comments", e);
                         showNoComments();
                     }
                 } else {
-                    android.util.Log.e(TAG, "Failed to load comments: " + response.getErrorMessage());
                     showNoComments();
                 }
             }
@@ -408,7 +396,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing comments array", e);
         }
         return comments;
     }
@@ -457,34 +444,24 @@ public class ArticleDetailActivity extends AppCompatActivity {
             return;
         }
         
-        // Disable input while posting
         commentEditText.setEnabled(false);
         sendCommentButton.setEnabled(false);
-        
-        android.util.Log.d(TAG, "Posting comment to article: " + articleId);
         
         newsRepository.addComment(articleId, commentText, new NewsRepository.RepositoryCallback<JSONObject>() {
             @Override
             public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                // Re-enable input
                 commentEditText.setEnabled(true);
                 sendCommentButton.setEnabled(true);
                 
                 if (response.isSuccess()) {
-                    // Clear input
                     commentEditText.setText("");
-                    
-                    // Hide keyboard
                     hideKeyboard();
-                    
                     Toast.makeText(ArticleDetailActivity.this, "Comment posted", Toast.LENGTH_SHORT).show();
                     
-                    // Create a new comment object for immediate display
                     try {
                         JSONObject data = response.getData();
                         Comment newComment = Comment.fromJson(data);
                         
-                        // If no valid comment from response, create a temp one
                         if (newComment.getContent() == null || newComment.getContent().isEmpty()) {
                             newComment = new Comment();
                             newComment.setContent(commentText);
@@ -492,24 +469,18 @@ public class ArticleDetailActivity extends AppCompatActivity {
                             newComment.setCreatedAt(java.time.Instant.now().toString());
                         }
                         
-                        // Add to adapter
                         commentsAdapter.addComment(newComment);
                         
-                        // Update count
                         int count = commentsAdapter.getItemCount();
                         commentCountTextView.setText("(" + count + ")");
                         
-                        // Show comments list
                         noCommentsTextView.setVisibility(View.GONE);
                         commentsRecyclerView.setVisibility(View.VISIBLE);
                         
                     } catch (Exception e) {
-                        android.util.Log.e(TAG, "Error creating comment from response", e);
-                        // Reload all comments on error
                         loadComments();
                     }
                 } else {
-                    android.util.Log.e(TAG, "Failed to post comment: " + response.getErrorMessage());
                     Toast.makeText(ArticleDetailActivity.this, "Failed to post comment", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -540,23 +511,17 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
 
     private void showFontSizeDialog() {
-        android.util.Log.d(TAG, "showFontSizeDialog called");
         try {
             if (fontSizeDialog == null) {
-                android.util.Log.d(TAG, "Creating new FontSizeDialog");
                 fontSizeDialog = new FontSizeDialog(this, new FontSizeDialog.FontSizeCallback() {
                     @Override
                     public void onFontSizeApplied(int fontSize) {
-                        android.util.Log.d(TAG, "Font size applied: " + fontSize);
-                        // Apply the new font size
                         applyFontSize();
                     }
                 });
             }
-            android.util.Log.d(TAG, "Showing FontSizeDialog");
             fontSizeDialog.show();
         } catch (Exception e) {
-            android.util.Log.e(TAG, "Error showing font size dialog", e);
         }
     }
 }

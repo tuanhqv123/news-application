@@ -14,9 +14,7 @@ import com.example.newsapplication.model.Channel;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Adapter for displaying channels as horizontal chips.
- */
+// Adapter for displaying channels as horizontal chips
 public class ChannelChipAdapter extends RecyclerView.Adapter<ChannelChipAdapter.ChipViewHolder> {
 
     private List<Channel> channels;

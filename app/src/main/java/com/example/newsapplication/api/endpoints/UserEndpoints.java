@@ -1,12 +1,10 @@
 package com.example.newsapplication.api.endpoints;
 
-import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiConfig;
 import org.json.JSONObject;
 
 public class UserEndpoints {
-    private static final String TAG = "UserEndpoints";
     private final ApiClient apiClient;
 
     public UserEndpoints(ApiClient apiClient) {

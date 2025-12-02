@@ -1,6 +1,5 @@
 package com.example.newsapplication.api.endpoints;
 
-import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiConfig;
 import com.example.newsapplication.model.request.CategoryCreate;
@@ -8,7 +7,6 @@ import com.example.newsapplication.utils.UrlBuilder;
 import org.json.JSONObject;
 
 public class CategoryEndpoints {
-    private static final String TAG = "CategoryEndpoints";
     private final ApiClient apiClient;
 
     public CategoryEndpoints(ApiClient apiClient) {

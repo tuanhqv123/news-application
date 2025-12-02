@@ -17,9 +17,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Adapter for displaying channels in a RecyclerView.
- */
+// Adapter for displaying channels in a RecyclerView
 public class ChannelsAdapter extends RecyclerView.Adapter<ChannelsAdapter.ChannelViewHolder> {
 
     private List<Channel> channels;

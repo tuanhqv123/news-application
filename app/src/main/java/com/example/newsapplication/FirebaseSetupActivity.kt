@@ -1,7 +1,6 @@
 package com.example.newsapplication
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -9,10 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.newsapplication.firebase.FirebaseManager
 
 class FirebaseSetupActivity : AppCompatActivity() {
-
-    companion object {
-        private const val TAG = "FirebaseSetupActivity"
-    }
 
     private lateinit var firebaseManager: FirebaseManager
     private lateinit var tokenTextView: TextView
@@ -58,13 +53,11 @@ class FirebaseSetupActivity : AppCompatActivity() {
                 if (token != null) {
                     tokenTextView.text = "FCM Token:\n$token"
 
-                    // Copy token to clipboard for easy testing with Postman
                     val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     val clip = android.content.ClipData.newPlainText("FCM Token", token)
                     clipboard.setPrimaryClip(clip)
 
                     Toast.makeText(this, "Token copied to clipboard!", Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, "FCM Token: $token")
                 } else {
                     tokenTextView.text = "Failed to get FCM token"
                     Toast.makeText(this, "Failed to get token", Toast.LENGTH_SHORT).show()

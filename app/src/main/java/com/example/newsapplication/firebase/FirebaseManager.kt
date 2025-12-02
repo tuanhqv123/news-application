@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.OnCompleteListener
@@ -14,7 +13,6 @@ import com.google.firebase.messaging.FirebaseMessaging
 class FirebaseManager private constructor() {
 
     companion object {
-        private const val TAG = "FirebaseManager"
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
 
         @Volatile
@@ -27,41 +25,29 @@ class FirebaseManager private constructor() {
         }
     }
 
-    /**
-     * Get the current FCM token
-     */
+    // Get the current FCM token
     fun getCurrentToken(context: Context, callback: (String?) -> Unit) {
-        // First check if we have a saved token
         val sharedPreferences = context.getSharedPreferences("FirebasePrefs", Context.MODE_PRIVATE)
         val savedToken = sharedPreferences.getString("fcm_token", null)
 
         if (savedToken != null) {
-            Log.d(TAG, "Using saved token: $savedToken")
             callback(savedToken)
             return
         }
 
-        // Get fresh token from Firebase
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w(TAG, "Fetching FCM registration token failed", task.exception)
                 callback(null)
                 return@OnCompleteListener
             }
 
             val token = task.result
-            Log.d(TAG, "FCM token: $token")
-
-            // Save token to preferences
             sharedPreferences.edit().putString("fcm_token", token).apply()
-
             callback(token)
         })
     }
 
-    /**
-     * Check if notification permission is granted (for Android 13+)
-     */
+    // Check if notification permission is granted (for Android 13+)
     fun hasNotificationPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
@@ -69,13 +55,11 @@ class FirebaseManager private constructor() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         } else {
-            true // Permission not required for versions below Android 13
+            true
         }
     }
 
-    /**
-     * Request notification permission (for Android 13+)
-     */
+    // Request notification permission (for Android 13+)
     fun requestNotificationPermission(activity: Activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!hasNotificationPermission(activity)) {
@@ -88,41 +72,23 @@ class FirebaseManager private constructor() {
         }
     }
 
-    /**
-     * Subscribe to a topic
-     */
+    // Subscribe to a topic
     fun subscribeToTopic(topic: String, callback: (Boolean) -> Unit = {}) {
         FirebaseMessaging.getInstance().subscribeToTopic(topic)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.d(TAG, "Subscribed to topic: $topic")
-                    callback(true)
-                } else {
-                    Log.w(TAG, "Failed to subscribe to topic: $topic", task.exception)
-                    callback(false)
-                }
+                callback(task.isSuccessful)
             }
     }
 
-    /**
-     * Unsubscribe from a topic
-     */
+    // Unsubscribe from a topic
     fun unsubscribeFromTopic(topic: String, callback: (Boolean) -> Unit = {}) {
         FirebaseMessaging.getInstance().unsubscribeFromTopic(topic)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.d(TAG, "Unsubscribed from topic: $topic")
-                    callback(true)
-                } else {
-                    Log.w(TAG, "Failed to unsubscribe from topic: $topic", task.exception)
-                    callback(false)
-                }
+                callback(task.isSuccessful)
             }
     }
 
-    /**
-     * Get device information for logging purposes
-     */
+    // Get device information
     fun getDeviceInfo(context: Context): Map<String, String> {
         return mapOf(
             "device_model" to "${Build.MANUFACTURER} ${Build.MODEL}",

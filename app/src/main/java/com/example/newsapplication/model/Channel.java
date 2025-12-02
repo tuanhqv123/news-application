@@ -2,9 +2,7 @@ package com.example.newsapplication.model;
 
 import org.json.JSONObject;
 
-/**
- * Model class representing a news channel.
- */
+// Represents a news channel
 public class Channel {
     private int id;
     private String name;
@@ -29,9 +27,7 @@ public class Channel {
         this.isFollowing = isFollowing;
     }
 
-    /**
-     * Create a Channel from JSON response
-     */
+    // Create a Channel from JSON response
     public static Channel fromJson(JSONObject json) {
         Channel channel = new Channel();
         try {
@@ -44,7 +40,6 @@ public class Channel {
             channel.isActive = json.optBoolean("is_active", true);
             channel.createdAt = json.optString("created_at", "");
             channel.updatedAt = json.optString("updated_at", "");
-            // Check if user is following
             channel.isFollowing = json.optBoolean("is_following", false);
         } catch (Exception e) {
             e.printStackTrace();

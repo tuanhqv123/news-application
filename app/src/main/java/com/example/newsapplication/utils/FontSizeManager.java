@@ -8,17 +8,14 @@ public class FontSizeManager {
     private static final String PREF_NAME = "FontSizePrefs";
     private static final String KEY_FONT_SIZE = "article_font_size";
 
-    // Font size options
     public static final float FONT_SIZE_SMALL = 12f;
-    public static final float FONT_SIZE_MEDIUM = 14f;  // Default
+    public static final float FONT_SIZE_MEDIUM = 14f;
     public static final float FONT_SIZE_LARGE = 16f;
     public static final float FONT_SIZE_EXTRA_LARGE = 18f;
 
     private SharedPreferences prefs;
-    private Context context;
 
     public FontSizeManager(Context context) {
-        this.context = context;
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
