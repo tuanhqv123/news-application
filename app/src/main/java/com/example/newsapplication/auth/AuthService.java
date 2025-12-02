@@ -43,6 +43,7 @@ public class AuthService {
                         String userEmail = userData.optString("email", email);
                         String displayName = userData.optString("display_name", email.split("@")[0]);
                         String role = userData.optString("role", "reader");
+                        String avatarUrl = userData.optString("avatar_url", null);
                         
                         // Store token and session data
                         apiClient.setAuthToken(token);
@@ -50,6 +51,10 @@ public class AuthService {
                             sessionManager.createLoginSession(userEmail, displayName, role, token, refreshToken);
                         } else {
                             sessionManager.createLoginSession(userEmail, displayName, role, token);
+                        }
+                        // Save avatar URL
+                        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                            sessionManager.setAvatarUrl(avatarUrl);
                         }
                         
                         // Also get the success message from response
@@ -175,13 +180,27 @@ public class AuthService {
             @Override
             public void onSuccess(ApiResponse<JSONObject> response) {
                 try {
-                    JSONObject userData = response.getData();
+                    JSONObject data = response.getData();
+                    JSONObject userData = data;
+                    
+                    // Handle nested response: { "success": true, "data": { "user": {...} } }
+                    if (data != null && data.has("success") && data.optBoolean("success", false) && data.has("data")) {
+                        JSONObject responseData = data.getJSONObject("data");
+                        if (responseData.has("user")) {
+                            userData = responseData.getJSONObject("user");
+                        }
+                    }
+                    
                     if (userData != null) {
                         String email = userData.optString("email", "");
                         String displayName = userData.optString("display_name", "");
                         String role = userData.optString("role", "reader");
+                        String avatarUrl = userData.optString("avatar_url", null);
                         
                         sessionManager.createLoginSession(email, displayName, role);
+                        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                            sessionManager.setAvatarUrl(avatarUrl);
+                        }
                     }
                     callback.onSuccess(userData);
                 } catch (Exception e) {

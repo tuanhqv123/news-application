@@ -16,8 +16,10 @@ import com.example.newsapplication.databinding.ActivityMainBinding;
 import com.example.newsapplication.auth.AuthenticationDialog;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
+import com.example.newsapplication.auth.EditProfileDialog;
 
 import androidx.fragment.app.Fragment;
+import android.content.Intent;
 
 import com.example.newsapplication.ui.home.HomeFragment;
 
@@ -28,6 +30,7 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     private String currentSource = "VnExpress";
     private UserSessionManager sessionManager;
     private AuthenticationDialog authDialog;
+    private EditProfileDialog editProfileDialog;
 
 
 
@@ -210,6 +213,20 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_activity_main);
         if (currentFragment instanceof HomeFragment) {
             ((HomeFragment) currentFragment).switchToSource(currentSource);
+        }
+    }
+
+    public void setEditProfileDialog(EditProfileDialog dialog) {
+        this.editProfileDialog = dialog;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        // Forward image picker result to EditProfileDialog
+        if (editProfileDialog != null) {
+            editProfileDialog.handleImageResult(requestCode, resultCode, data);
         }
     }
 }

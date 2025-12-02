@@ -30,6 +30,8 @@ import com.example.newsapplication.utils.JsonParsingUtils;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
 import com.example.newsapplication.repository.NewsRepository;
+import com.example.newsapplication.utils.CircleTransform;
+import com.squareup.picasso.Picasso;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -262,9 +264,20 @@ public class HomeFragment extends Fragment {
         if (sessionManager.isLoggedIn()) {
             String userName = sessionManager.getUserName();
             String email = sessionManager.getUserEmail();
+            String avatarUrl = sessionManager.getAvatarUrl();
             
             // Show user name in header
             binding.userNameTextView.setText(userName.isEmpty() ? email.split("@")[0] : userName);
+            
+            // Load avatar image with circular transform
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                Picasso.get()
+                        .load(avatarUrl)
+                        .transform(new CircleTransform())
+                        .placeholder(R.drawable.ic_launcher_foreground)
+                        .error(R.drawable.ic_launcher_foreground)
+                        .into(binding.userAvatar);
+            }
         } else {
             // Show generic user info
             binding.userNameTextView.setText("Guest User");

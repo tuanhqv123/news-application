@@ -19,6 +19,8 @@ import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
 import com.example.newsapplication.auth.EditProfileDialog;
 import com.example.newsapplication.databinding.FragmentProfileBinding;
+import com.squareup.picasso.Picasso;
+import com.example.newsapplication.utils.CircleTransform;
 import org.json.JSONObject;
 
 public class ProfileFragment extends Fragment {
@@ -144,11 +146,22 @@ public class ProfileFragment extends Fragment {
         String displayName = sessionManager.getUserName();
         String email = sessionManager.getUserEmail();
         String role = sessionManager.getUserRole();
+        String avatarUrl = sessionManager.getAvatarUrl();
         
         userName.setText(displayName.isEmpty() ? email.split("@")[0] : displayName);
         userEmail.setText(email);
         binding.authButton.setText("Log Out");
         binding.authButton.setTextColor(getResources().getColor(android.R.color.holo_red_dark, null));
+        
+        // Load avatar image with circular transform
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            Picasso.get()
+                    .load(avatarUrl)
+                    .transform(new CircleTransform())
+                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .into(userAvatar);
+        }
         
         // Show/hide menu items based on role
         updateMenuItemsByRole(role);
@@ -174,10 +187,13 @@ public class ProfileFragment extends Fragment {
             getChildFragmentManager(),
             new EditProfileDialog.ProfileUpdateListener() {
                 @Override
-                public void onProfileUpdated(String displayName, String avatarBase64) {
-                    // Update UI with new data - local update only, no API call
+                public void onProfileUpdated(String displayName, String avatarUrl) {
+                    // Save avatar URL to session
+                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                        sessionManager.setAvatarUrl(avatarUrl);
+                    }
+                    // Update UI with new data
                     showLoggedInState();
-                    Toast.makeText(getContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
                 }
             });
         

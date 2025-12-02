@@ -105,4 +105,15 @@ public class UserSessionManager {
         editor.putString(KEY_USER_NAME, newName);
         editor.apply();
     }
+
+    private static final String KEY_AVATAR_URL = "avatarUrl";
+
+    public String getAvatarUrl() {
+        return prefs.getString(KEY_AVATAR_URL, null);
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        editor.putString(KEY_AVATAR_URL, avatarUrl);
+        editor.apply();
+    }
 }
