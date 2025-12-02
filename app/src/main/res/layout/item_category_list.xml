@@ -8,23 +8,13 @@
     android:gravity="center_vertical"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
-    android:paddingTop="14dp"
-    android:paddingBottom="14dp">
-
-    <ImageView
-        android:id="@+id/categoryIcon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:padding="8dp"
-        android:background="@drawable/category_icon_background"
-        android:src="@drawable/ic_category_default"
-        app:tint="@color/primary" />
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="12dp"
         android:orientation="vertical">
 
         <TextView
@@ -37,13 +27,15 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/categoryArticleCount"
+            android:id="@+id/categoryDescriptionTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="View articles"
+            android:text="Category description"
             android:textColor="@color/gray"
-            android:textSize="12sp"
-            android:layout_marginTop="2dp" />
+            android:textSize="13sp"
+            android:layout_marginTop="4dp"
+            android:maxLines="2"
+            android:ellipsize="end" />
 
     </LinearLayout>
 

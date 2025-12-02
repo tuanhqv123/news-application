@@ -47,13 +47,6 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         // Initialize session manager
         sessionManager = new UserSessionManager(this);
         
-        // Initialize Picasso for better image loading
-        com.squareup.picasso.Picasso.Builder builder = new com.squareup.picasso.Picasso.Builder(this);
-        builder.loggingEnabled(true);
-        builder.indicatorsEnabled(true);
-        com.squareup.picasso.Picasso picasso = builder.build();
-        com.squareup.picasso.Picasso.setSingletonInstance(picasso);
-        
         // Initialize API client with auth token if available
         String authToken = sessionManager.getAuthToken();
         if (authToken != null) {
@@ -171,6 +164,16 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     public void navigateToProfile() {
         navController.navigate(R.id.navigation_profile);
         updateNavigationState(NAV_PROFILE);
+    }
+
+    public void navigateToExploreWithChannel(int channelId, String channelName, boolean isFollowing) {
+        // Navigate to explore and pass channel info
+        android.os.Bundle args = new android.os.Bundle();
+        args.putInt("channelId", channelId);
+        args.putString("channelName", channelName);
+        args.putBoolean("isFollowing", isFollowing);
+        navController.navigate(R.id.navigation_dashboard, args);
+        updateNavigationState(NAV_EXPLORE);
     }
 
     @Override

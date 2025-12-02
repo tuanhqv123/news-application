@@ -1,237 +1,252 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/home_p"
+    android:background="@color/white"
+    android:orientation="vertical"
     tools:context=".ui.home.HomeFragment">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Scrollable Content -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
-        <!-- User Avatar -->
-        <ImageView
-            android:id="@+id/userAvatar"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:src="@drawable/ic_launcher_foreground"
-            android:background="@drawable/avatar_background"
-            android:padding="0dp"
-            android:elevation="4dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Notification Icon -->
-        <ImageView
-            android:id="@+id/notificationIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginTop="28dp"
-            android:layout_marginEnd="16dp"
-            android:src="@android:drawable/ic_dialog_email"
-            android:background="@drawable/icon_background"
-            android:padding="2dp"
-            android:elevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Welcome Section -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="26dp"
             android:orientation="vertical"
-            app:layout_constraintStart_toEndOf="@id/userAvatar"
-            app:layout_constraintTop_toTopOf="parent">
+            android:paddingBottom="100dp">
 
-            <TextView
-                android:id="@+id/greetingTextView"
-                android:layout_width="wrap_content"
+            <!-- User Info Row -->
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Good Morning,"
-                android:textColor="#000000"
-                android:textSize="12sp" />
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
 
-            <TextView
-                android:id="@+id/userNameTextView"
-                android:layout_width="wrap_content"
+                <!-- User Avatar -->
+                <ImageView
+                    android:id="@+id/userAvatar"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_launcher_foreground"
+                    android:background="@drawable/avatar_background"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true" />
+
+                <!-- Welcome Section -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@id/userAvatar"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/greetingTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Good Morning,"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/userNameTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:text="Guest User"
+                        android:textColor="#000000"
+                        android:textSize="15sp" />
+
+                </LinearLayout>
+
+                <!-- Notification Icon -->
+                <ImageView
+                    android:id="@+id/notificationIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_notification"
+                    android:padding="2dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true" />
+
+            </RelativeLayout>
+
+            <!-- Breaking News Section -->
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textStyle="bold"
-                android:text="Mia Luna"
-                android:textColor="#000000"
-                android:textSize="14sp" />
+                android:layout_marginTop="8dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/breakingNewsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:textStyle="bold"
+                    android:text="Breaking News"
+                    android:textColor="#000000"
+                    android:textSize="18sp" />
 
-        <!-- Tab Navigation -->
-        <LinearLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/tab_background"
-            android:orientation="horizontal"
-            android:elevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/userAvatar">
+                <TextView
+                    android:id="@+id/seeMoreTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:text="See More"
+                    android:textColor="#0866FF"
+                    android:textSize="13sp" />
 
-            <TextView
-                android:id="@+id/feedsTab"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/tab_selected_background"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:text="Feeds"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp" />
+            </RelativeLayout>
 
-            <TextView
-                android:id="@+id/popularTab"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@android:color/transparent"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:text="Popular"
-                android:textColor="#666666"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/followingTab"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@android:color/transparent"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:text="Following"
-                android:textColor="#666666"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- Following Section (channels user follows) - Initially Hidden -->
-        <LinearLayout
-            android:id="@+id/followingContainer"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:orientation="vertical"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tabLayout">
-
-            <TextView
-                android:id="@+id/followingTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Channels You Follow"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
+            <!-- Breaking News RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/followingChannelsRecyclerView"
+                android:id="@+id/breakingNewsRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:nestedScrollingEnabled="false" />
+                android:clipToPadding="false"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                tools:listitem="@layout/item_breaking_news" />
 
-            <TextView
-                android:id="@+id/noFollowingText"
-                android:layout_width="wrap_content"
+            <!-- Tab Navigation -->
+            <LinearLayout
+                android:id="@+id/tabLayout"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/tab_background"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <TextView
+                    android:id="@+id/feedsTab"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/tab_selected_background"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:text="Feeds"
+                    android:textColor="#F39E3A"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/popularTab"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:text="Popular"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/followingTab"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:text="Following"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+
+            <!-- Content Container (changes based on tab selection) -->
+            <FrameLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="24dp"
-                android:text="You haven't followed any channels yet.\nExplore channels to follow!"
-                android:textColor="@color/gray"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:visibility="gone" />
+                android:layout_marginTop="16dp">
+
+                <!-- Feeds/Popular Content -->
+                <LinearLayout
+                    android:id="@+id/feedsPopularContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/popularNewsTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginBottom="12dp"
+                        android:textStyle="bold"
+                        android:text="Latest News"
+                        android:textColor="#000000"
+                        android:textSize="16sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/popularNewsRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:nestedScrollingEnabled="false"
+                        tools:listitem="@layout/item_news_feed" />
+
+                </LinearLayout>
+
+                <!-- Following Content (channels user follows) -->
+                <LinearLayout
+                    android:id="@+id/followingContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
+
+                    <TextView
+                        android:id="@+id/followingTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Channels You Follow"
+                        android:textColor="#000000"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/followingChannelsRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:nestedScrollingEnabled="false" />
+
+                    <TextView
+                        android:id="@+id/noFollowingText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="24dp"
+                        android:text="You haven't followed any channels yet.\nExplore channels to follow!"
+                        android:textColor="@color/gray"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+            </FrameLayout>
 
         </LinearLayout>
 
-        <!-- Breaking News Section -->
-        <TextView
-            android:id="@+id/breakingNewsTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="24dp"
-            android:textStyle="bold"
-            android:text="Breaking News"
-            android:textColor="#000000"
-            android:textSize="16sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tabLayout" />
+    </androidx.core.widget.NestedScrollView>
 
-        <TextView
-            android:id="@+id/seeMoreTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:text="See More"
-            android:textColor="#0866FF"
-            android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/breakingNewsTitle" />
-
-        <!-- Breaking News RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/breakingNewsRecyclerView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:clipToPadding="false"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/breakingNewsTitle"
-            tools:listitem="@layout/item_breaking_news" />
-
-        <!-- Popular News Section -->
-        <TextView
-            android:id="@+id/popularNewsTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="24dp"
-            android:textStyle="bold"
-            android:text="Popular"
-            android:textColor="#000000"
-            android:textSize="16sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/breakingNewsRecyclerView" />
-
-        <!-- Popular News RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/popularNewsRecyclerView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="32dp"
-            android:clipToPadding="false"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/popularNewsTitle"
-            tools:listitem="@layout/item_news_card_hero" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.core.widget.NestedScrollView>
+</LinearLayout>

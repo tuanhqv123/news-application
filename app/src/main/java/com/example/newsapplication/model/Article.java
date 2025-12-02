@@ -46,6 +46,10 @@ public class Article implements Serializable {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
+    // Alias for description (API uses "summary")
+    public String getSummary() { return description; }
+    public void setSummary(String summary) { this.description = summary; }
+
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
 

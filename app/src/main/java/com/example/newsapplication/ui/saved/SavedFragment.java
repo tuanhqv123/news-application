@@ -284,6 +284,15 @@ public class SavedFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        // Reload bookmarks when returning to this fragment
+        if (sessionManager != null && sessionManager.isLoggedIn()) {
+            loadSavedArticles();
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;

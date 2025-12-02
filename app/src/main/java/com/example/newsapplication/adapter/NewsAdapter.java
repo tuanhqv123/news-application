@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.newsapplication.R;
 import com.example.newsapplication.model.Article;
+import com.example.newsapplication.utils.DateUtils;
 import java.util.List;
 
 public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder> {
@@ -50,54 +51,58 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             holder.titleTextView.setText(article.getTitle());
         }
         
-        if (holder.sourceTextView != null) {
-            String sourceText = article.getSource() != null ? article.getSource() : "";
-            if (article.getDate() != null && !article.getDate().isEmpty()) {
-                if (!sourceText.isEmpty()) {
-                    sourceText += " • ";
-                }
-                sourceText += article.getDate();
-            }
-            holder.sourceTextView.setText(sourceText);
-        }
-
+        // Set category
         if (holder.categoryTextView != null && article.getCategory() != null) {
             holder.categoryTextView.setText(article.getCategory());
+        }
+        
+        // Set date only (no category, no dot separator)
+        if (holder.categoryDateTextView != null) {
+            String dateStr = article.getDate();
+            String formattedDate = "";
+            if (dateStr != null && !dateStr.isEmpty()) {
+                formattedDate = DateUtils.formatToShortMonthDay(dateStr);
+                if (formattedDate.isEmpty()) {
+                    formattedDate = dateStr;
+                }
+            }
+            
+            holder.categoryDateTextView.setText(formattedDate);
+        }
+        
+        // Hide source and date (using combined field instead)
+        if (holder.sourceTextView != null) {
+            holder.sourceTextView.setVisibility(View.GONE);
+        }
+        if (holder.dateTextView != null) {
+            holder.dateTextView.setVisibility(View.GONE);
+        }
+        
+        // Set summary if available
+        if (holder.summaryTextView != null) {
+            String summary = article.getSummary();
+            if (summary != null && !summary.isEmpty()) {
+                holder.summaryTextView.setText(summary);
+                holder.summaryTextView.setVisibility(View.VISIBLE);
+            } else {
+                holder.summaryTextView.setVisibility(View.GONE);
+            }
         }
 
         // Load image from URL using Picasso
         if (holder.imageView != null) {
             if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
-                // Load image from URL with proper configuration
+                // Load image without placeholder to avoid blue/green indicator
                 com.squareup.picasso.Picasso.get()
                     .load(article.getImageUrl())
-                    .placeholder(R.drawable.placeholder_image)
-                    .error(R.drawable.ic_launcher_foreground)
+                    .noPlaceholder()
+                    .error(R.drawable.placeholder_image)
                     .fit()
                     .centerCrop()
                     .into(holder.imageView);
             } else {
-                // Set placeholder if no URL is available
                 holder.imageView.setImageResource(R.drawable.placeholder_image);
             }
-        }
-
-        // Handle bookmark click
-        if (holder.itemView.findViewById(R.id.bookmarkIcon) != null) {
-            ImageView bookmarkIcon = holder.itemView.findViewById(R.id.bookmarkIcon);
-            
-            // Update bookmark icon state
-            if (article.isBookmarked()) {
-                bookmarkIcon.setImageResource(R.drawable.ic_bookmark_filled);
-            } else {
-                bookmarkIcon.setImageResource(R.drawable.ic_bookmark_outline);
-            }
-            
-            bookmarkIcon.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onBookmarkClick(article, holder.getAdapterPosition());
-                }
-            });
         }
 
         // Handle item click
@@ -124,6 +129,8 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         TextView sourceTextView;
         TextView dateTextView;
         TextView categoryTextView;
+        TextView summaryTextView;
+        TextView categoryDateTextView;
 
         public NewsViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -132,6 +139,8 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             sourceTextView = itemView.findViewById(R.id.sourceTextView);
             dateTextView = itemView.findViewById(R.id.dateTextView);
             categoryTextView = itemView.findViewById(R.id.categoryTextView);
+            summaryTextView = itemView.findViewById(R.id.summaryTextView);
+            categoryDateTextView = itemView.findViewById(R.id.categoryDateTextView);
         }
     }
 }

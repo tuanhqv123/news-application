@@ -30,22 +30,34 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
         private int id;
         private String name;
         private String slug;
+        private String description;
 
         public Category(int id, String name) {
             this.id = id;
             this.name = name;
             this.slug = name.toLowerCase().replace(" ", "-");
+            this.description = "";
         }
 
         public Category(int id, String name, String slug) {
             this.id = id;
             this.name = name;
             this.slug = slug;
+            this.description = "";
+        }
+
+        public Category(int id, String name, String slug, String description) {
+            this.id = id;
+            this.name = name;
+            this.slug = slug;
+            this.description = description;
         }
 
         public int getId() { return id; }
         public String getName() { return name; }
         public String getSlug() { return slug; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
     }
 
     public CategoryListAdapter(List<Category> categories, OnCategoryClickListener listener) {
@@ -79,21 +91,26 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
 
     static class CategoryViewHolder extends RecyclerView.ViewHolder {
         private final TextView nameTextView;
-        private final TextView articleCountTextView;
-        private final ImageView categoryIcon;
+        private final TextView descriptionTextView;
         private final ImageView arrowIcon;
 
         public CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
             nameTextView = itemView.findViewById(R.id.categoryNameTextView);
-            articleCountTextView = itemView.findViewById(R.id.categoryArticleCount);
-            categoryIcon = itemView.findViewById(R.id.categoryIcon);
+            descriptionTextView = itemView.findViewById(R.id.categoryDescriptionTextView);
             arrowIcon = itemView.findViewById(R.id.arrowIcon);
         }
 
         public void bind(Category category, OnCategoryClickListener listener, int position) {
             nameTextView.setText(category.getName());
-            articleCountTextView.setText("View articles");
+            
+            // Show description if available, otherwise show default text
+            String description = category.getDescription();
+            if (description != null && !description.isEmpty() && !description.equals("null")) {
+                descriptionTextView.setText(description);
+            } else {
+                descriptionTextView.setText("Browse " + category.getName().toLowerCase() + " articles");
+            }
             
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

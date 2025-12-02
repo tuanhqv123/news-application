@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -50,26 +52,39 @@ public class DashboardFragment extends Fragment {
     private static final long SEARCH_DEBOUNCE_DELAY = 500;
 
     private FragmentDashboardBinding binding;
-    private NewsAdapter contentAdapter;
     private NewsAdapter filteredArticlesAdapter;
+    private NewsAdapter searchResultsAdapter;
     private CategoryListAdapter categoryListAdapter;
     private ChannelChipAdapter channelChipAdapter;
     
-    private RecyclerView contentRecyclerView;
+    // Main content views
+    private NestedScrollView mainContentScrollView;
+    private LinearLayout mainContentContainer;
     private RecyclerView categoriesRecyclerView;
     private RecyclerView channelsRecyclerView;
-    private RecyclerView filteredArticlesRecyclerView;
     
+    // Search results views
+    private LinearLayout searchResultsContainer;
+    private RecyclerView searchResultsRecyclerView;
+    private ProgressBar searchProgressBar;
+    private TextView noSearchResultsText;
+    private TextView searchResultsTitle;
+    private ImageView closeSearchButton;
+    
+    // Filtered articles views
     private LinearLayout filteredArticlesContainer;
+    private RecyclerView filteredArticlesRecyclerView;
     private ProgressBar articlesProgressBar;
     private TextView noArticlesText;
     private TextView filteredArticlesTitle;
+    private ImageView backFromArticlesButton;
+    private Button followChannelButton;
     
     private EditText searchEditText;
     private ImageView clearSearchIcon;
     
-    private List<Article> contentArticles;
     private List<Article> filteredArticles;
+    private List<Article> searchResults;
     private List<CategoryListAdapter.Category> categories;
     private List<Channel> channels;
     private Set<Integer> followedChannelIds;
@@ -81,6 +96,7 @@ public class DashboardFragment extends Fragment {
     
     private int selectedCategoryId = -1;
     private int selectedChannelId = -1;
+    private Channel selectedChannel = null;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -94,8 +110,8 @@ public class DashboardFragment extends Fragment {
         sessionManager = new UserSessionManager(getContext());
         searchHandler = new Handler(Looper.getMainLooper());
         
-        contentArticles = new ArrayList<>();
         filteredArticles = new ArrayList<>();
+        searchResults = new ArrayList<>();
         categories = new ArrayList<>();
         channels = new ArrayList<>();
         followedChannelIds = new HashSet<>();
@@ -112,29 +128,64 @@ public class DashboardFragment extends Fragment {
             loadChannels();
         }
         loadCategories();
-        loadTrendingArticles();
+        
+        // Check if navigated from Following tab with channel info
+        if (getArguments() != null) {
+            int channelId = getArguments().getInt("channelId", -1);
+            String channelName = getArguments().getString("channelName", "");
+            boolean isFollowing = getArguments().getBoolean("isFollowing", false);
+            
+            if (channelId > 0 && !channelName.isEmpty()) {
+                // Create a channel object and show its articles
+                Channel channel = new Channel();
+                channel.setId(channelId);
+                channel.setName(channelName);
+                channel.setFollowing(isFollowing);
+                selectedChannel = channel;
+                selectedChannelId = channelId;
+                
+                // Show articles for this channel
+                showArticlesByChannel(channel);
+                
+                // Clear arguments to prevent re-showing on rotation
+                getArguments().clear();
+            }
+        }
 
         return root;
     }
 
     private void initViews() {
-        contentRecyclerView = binding.contentRecyclerView;
+        // Main content
+        mainContentScrollView = binding.mainContentScrollView;
+        mainContentContainer = binding.mainContentContainer;
         categoriesRecyclerView = binding.categoriesRecyclerView;
         channelsRecyclerView = binding.channelsRecyclerView;
-        filteredArticlesRecyclerView = binding.filteredArticlesRecyclerView;
         
+        // Search results
+        searchResultsContainer = binding.searchResultsContainer;
+        searchResultsRecyclerView = binding.searchResultsRecyclerView;
+        searchProgressBar = binding.searchProgressBar;
+        noSearchResultsText = binding.noSearchResultsText;
+        searchResultsTitle = binding.searchResultsTitle;
+        closeSearchButton = binding.closeSearchButton;
+        
+        // Filtered articles
         filteredArticlesContainer = binding.filteredArticlesContainer;
+        filteredArticlesRecyclerView = binding.filteredArticlesRecyclerView;
         articlesProgressBar = binding.articlesProgressBar;
         noArticlesText = binding.noArticlesText;
         filteredArticlesTitle = binding.filteredArticlesTitle;
+        backFromArticlesButton = binding.backFromArticlesButton;
+        followChannelButton = binding.followChannelButton;
         
         searchEditText = binding.searchEditText;
         clearSearchIcon = binding.clearSearchIcon;
     }
 
     private void setupAdapters() {
-        // Content/Trending articles adapter
-        contentAdapter = new NewsAdapter(contentArticles, new NewsAdapter.OnItemClickListener() {
+        // Search results adapter
+        searchResultsAdapter = new NewsAdapter(searchResults, new NewsAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(Article article) {
                 openArticleDetail(article);
@@ -142,12 +193,11 @@ public class DashboardFragment extends Fragment {
 
             @Override
             public void onBookmarkClick(Article article, int position) {
-                handleBookmarkClick(article, position, contentAdapter);
+                handleBookmarkClick(article, position, searchResultsAdapter);
             }
         });
-        contentRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        contentRecyclerView.setAdapter(contentAdapter);
-        contentRecyclerView.setNestedScrollingEnabled(false);
+        searchResultsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        searchResultsRecyclerView.setAdapter(searchResultsAdapter);
 
         // Filtered articles adapter
         filteredArticlesAdapter = new NewsAdapter(filteredArticles, new NewsAdapter.OnItemClickListener() {
@@ -163,14 +213,14 @@ public class DashboardFragment extends Fragment {
         });
         filteredArticlesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         filteredArticlesRecyclerView.setAdapter(filteredArticlesAdapter);
-        filteredArticlesRecyclerView.setNestedScrollingEnabled(false);
 
         // Categories adapter (vertical list)
         categoryListAdapter = new CategoryListAdapter(categories, (category, position) -> {
             selectedCategoryId = category.getId();
             selectedChannelId = -1;
+            selectedChannel = null;
             channelChipAdapter.clearSelection();
-            loadArticlesByCategory(category.getId(), category.getName());
+            showArticlesByCategory(category.getId(), category.getName());
         });
         categoriesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         categoriesRecyclerView.setAdapter(categoryListAdapter);
@@ -181,7 +231,8 @@ public class DashboardFragment extends Fragment {
             channelChipAdapter.setSelectedPosition(position);
             selectedChannelId = channel.getId();
             selectedCategoryId = -1;
-            loadArticlesByChannel(channel.getId(), channel.getName());
+            selectedChannel = channel;
+            showArticlesByChannel(channel);
         });
         channelsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         channelsRecyclerView.setAdapter(channelChipAdapter);
@@ -204,7 +255,7 @@ public class DashboardFragment extends Fragment {
                     searchRunnable = () -> performSearch(s.toString().trim());
                     searchHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_DELAY);
                 } else {
-                    hideFilteredArticles();
+                    hideSearchResults();
                 }
             }
 
@@ -226,26 +277,89 @@ public class DashboardFragment extends Fragment {
         
         clearSearchIcon.setOnClickListener(v -> {
             searchEditText.setText("");
-            hideFilteredArticles();
+            hideSearchResults();
             hideKeyboard();
         });
     }
 
     private void setupClickListeners() {
-        binding.seeMoreTrending.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "See more trending articles", Toast.LENGTH_SHORT).show();
+        // Close search results
+        closeSearchButton.setOnClickListener(v -> {
+            searchEditText.setText("");
+            hideSearchResults();
+            hideKeyboard();
         });
 
-        binding.seeAllChannels.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "See all channels", Toast.LENGTH_SHORT).show();
-        });
-
-        binding.closeFilterButton.setOnClickListener(v -> {
+        // Back from articles
+        backFromArticlesButton.setOnClickListener(v -> {
             hideFilteredArticles();
             channelChipAdapter.clearSelection();
             selectedCategoryId = -1;
             selectedChannelId = -1;
+            selectedChannel = null;
         });
+
+        // Follow channel button
+        followChannelButton.setOnClickListener(v -> {
+            if (selectedChannel != null) {
+                handleFollowChannel();
+            }
+        });
+    }
+
+    private void handleFollowChannel() {
+        if (!sessionManager.isLoggedIn()) {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).showLoginDialog();
+            }
+            return;
+        }
+
+        if (selectedChannel == null) return;
+
+        boolean isFollowing = selectedChannel.isFollowing();
+        
+        if (isFollowing) {
+            // Unfollow
+            newsRepository.unfollowChannel(selectedChannel.getId(), new NewsRepository.RepositoryCallback<JSONObject>() {
+                @Override
+                public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                    if (response.isSuccess()) {
+                        selectedChannel.setFollowing(false);
+                        followedChannelIds.remove(selectedChannel.getId());
+                        updateFollowButton(false);
+                        Toast.makeText(getContext(), "Unfollowed " + selectedChannel.getName(), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Failed to unfollow", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        } else {
+            // Follow
+            newsRepository.followChannel(selectedChannel.getId(), new NewsRepository.RepositoryCallback<JSONObject>() {
+                @Override
+                public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                    if (response.isSuccess()) {
+                        selectedChannel.setFollowing(true);
+                        followedChannelIds.add(selectedChannel.getId());
+                        updateFollowButton(true);
+                        Toast.makeText(getContext(), "Following " + selectedChannel.getName(), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Failed to follow", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
+    }
+
+    private void updateFollowButton(boolean isFollowing) {
+        if (isFollowing) {
+            followChannelButton.setText("Following");
+            followChannelButton.setBackgroundResource(R.drawable.button_following_background);
+        } else {
+            followChannelButton.setText("Follow");
+            followChannelButton.setBackgroundResource(R.drawable.button_follow_background);
+        }
     }
 
     private void loadFollowedChannelsThenLoadAll() {
@@ -255,7 +369,6 @@ public class DashboardFragment extends Fragment {
                 if (response.isSuccess() && response.getData() != null) {
                     parseFollowedChannelIds(response.getData());
                 }
-                // Now load all channels
                 loadChannels();
             }
         });
@@ -288,7 +401,6 @@ public class DashboardFragment extends Fragment {
                     }
                 }
             }
-            android.util.Log.d(TAG, "Loaded " + followedChannelIds.size() + " followed channel IDs");
         } catch (Exception e) {
             android.util.Log.e(TAG, "Error parsing followed channels", e);
         }
@@ -333,7 +445,8 @@ public class DashboardFragment extends Fragment {
                     int id = catJson.optInt("id", i);
                     String name = catJson.optString("name", "Category " + i);
                     String slug = catJson.optString("slug", name.toLowerCase());
-                    categories.add(new CategoryListAdapter.Category(id, name, slug));
+                    String description = catJson.optString("description", "");
+                    categories.add(new CategoryListAdapter.Category(id, name, slug, description));
                 }
             }
         } catch (Exception e) {
@@ -349,12 +462,12 @@ public class DashboardFragment extends Fragment {
 
     private void loadDefaultCategories() {
         categories.clear();
-        categories.add(new CategoryListAdapter.Category(1, "Politics"));
-        categories.add(new CategoryListAdapter.Category(2, "Technology"));
-        categories.add(new CategoryListAdapter.Category(3, "Sports"));
-        categories.add(new CategoryListAdapter.Category(4, "Business"));
-        categories.add(new CategoryListAdapter.Category(5, "Entertainment"));
-        categories.add(new CategoryListAdapter.Category(6, "Health"));
+        categories.add(new CategoryListAdapter.Category(1, "Politics", "politics", "Political news and updates"));
+        categories.add(new CategoryListAdapter.Category(2, "Technology", "technology", "Tech news and innovations"));
+        categories.add(new CategoryListAdapter.Category(3, "Sports", "sports", "Sports news and scores"));
+        categories.add(new CategoryListAdapter.Category(4, "Business", "business", "Business and finance news"));
+        categories.add(new CategoryListAdapter.Category(5, "Entertainment", "entertainment", "Entertainment and celebrity news"));
+        categories.add(new CategoryListAdapter.Category(6, "Health", "health", "Health and wellness news"));
         categoryListAdapter.setCategories(categories);
     }
 
@@ -364,8 +477,6 @@ public class DashboardFragment extends Fragment {
             public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
                 if (response.isSuccess() && response.getData() != null) {
                     parseChannels(response.getData());
-                } else {
-                    android.util.Log.e(TAG, "Failed to load channels: " + response.getErrorMessage());
                 }
             }
         });
@@ -395,7 +506,6 @@ public class DashboardFragment extends Fragment {
                 for (int i = 0; i < channelsArray.length(); i++) {
                     JSONObject channelJson = channelsArray.getJSONObject(i);
                     Channel channel = Channel.fromJson(channelJson);
-                    // Mark as following if in followed set
                     if (followedChannelIds.contains(channel.getId())) {
                         channel.setFollowing(true);
                     }
@@ -409,33 +519,29 @@ public class DashboardFragment extends Fragment {
         channelChipAdapter.setChannels(channels);
     }
 
-    private void loadTrendingArticles() {
-        newsRepository.getArticles(new NewsRepository.RepositoryCallback<JSONObject>() {
-            @Override
-            public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                if (response.isSuccess() && response.getData() != null) {
-                    parseArticles(response.getData(), contentArticles, contentAdapter);
-                } else {
-                    android.util.Log.e(TAG, "Failed to load trending articles: " + response.getErrorMessage());
-                }
-            }
-        });
-    }
-
-    private void loadArticlesByCategory(int categoryId, String categoryName) {
-        showFilteredArticlesLoading();
-        filteredArticlesTitle.setText(categoryName + " Articles");
+    private void showArticlesByCategory(int categoryId, String categoryName) {
+        // Hide header and main content, show filtered articles
+        binding.stickyHeader.setVisibility(View.GONE);
+        mainContentScrollView.setVisibility(View.GONE);
+        searchResultsContainer.setVisibility(View.GONE);
+        filteredArticlesContainer.setVisibility(View.VISIBLE);
+        
+        // Hide follow button for categories
+        followChannelButton.setVisibility(View.GONE);
+        
+        filteredArticlesTitle.setText(categoryName);
+        showArticlesLoading();
         
         newsRepository.getCategoryArticles(categoryId, 1, 20, new NewsRepository.RepositoryCallback<JSONObject>() {
             @Override
             public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                hideFilteredArticlesLoading();
+                hideArticlesLoading();
                 if (response.isSuccess() && response.getData() != null) {
                     parseArticles(response.getData(), filteredArticles, filteredArticlesAdapter);
                     if (filteredArticles.isEmpty()) {
                         showNoArticles();
                     } else {
-                        showFilteredArticles();
+                        showArticlesList();
                     }
                 } else {
                     showNoArticles();
@@ -444,20 +550,30 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    private void loadArticlesByChannel(int channelId, String channelName) {
-        showFilteredArticlesLoading();
-        filteredArticlesTitle.setText(channelName + " Articles");
+    private void showArticlesByChannel(Channel channel) {
+        // Hide header and main content, show filtered articles
+        binding.stickyHeader.setVisibility(View.GONE);
+        mainContentScrollView.setVisibility(View.GONE);
+        searchResultsContainer.setVisibility(View.GONE);
+        filteredArticlesContainer.setVisibility(View.VISIBLE);
         
-        newsRepository.getChannelArticles(channelId, 1, 20, new NewsRepository.RepositoryCallback<JSONObject>() {
+        // Show follow button for channels
+        followChannelButton.setVisibility(View.VISIBLE);
+        updateFollowButton(channel.isFollowing());
+        
+        filteredArticlesTitle.setText(channel.getName());
+        showArticlesLoading();
+        
+        newsRepository.getChannelArticles(channel.getId(), 1, 20, new NewsRepository.RepositoryCallback<JSONObject>() {
             @Override
             public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                hideFilteredArticlesLoading();
+                hideArticlesLoading();
                 if (response.isSuccess() && response.getData() != null) {
                     parseArticles(response.getData(), filteredArticles, filteredArticlesAdapter);
                     if (filteredArticles.isEmpty()) {
                         showNoArticles();
                     } else {
-                        showFilteredArticles();
+                        showArticlesList();
                     }
                 } else {
                     showNoArticles();
@@ -467,22 +583,27 @@ public class DashboardFragment extends Fragment {
     }
 
     private void performSearch(String query) {
-        showFilteredArticlesLoading();
-        filteredArticlesTitle.setText("Search: " + query);
+        // Show search results container, hide others
+        mainContentScrollView.setVisibility(View.GONE);
+        filteredArticlesContainer.setVisibility(View.GONE);
+        searchResultsContainer.setVisibility(View.VISIBLE);
+        
+        searchResultsTitle.setText("Results for \"" + query + "\"");
+        showSearchLoading();
         
         newsRepository.searchArticles(query, 1, 20, new NewsRepository.RepositoryCallback<JSONObject>() {
             @Override
             public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                hideFilteredArticlesLoading();
+                hideSearchLoading();
                 if (response.isSuccess() && response.getData() != null) {
-                    parseArticles(response.getData(), filteredArticles, filteredArticlesAdapter);
-                    if (filteredArticles.isEmpty()) {
-                        showNoArticles();
+                    parseArticles(response.getData(), searchResults, searchResultsAdapter);
+                    if (searchResults.isEmpty()) {
+                        showNoSearchResults();
                     } else {
-                        showFilteredArticles();
+                        showSearchResultsList();
                     }
                 } else {
-                    showNoArticles();
+                    showNoSearchResults();
                 }
             }
         });
@@ -547,13 +668,17 @@ public class DashboardFragment extends Fragment {
             }
             
             String category = articleJson.optString("category", "General");
-            String author = articleJson.optString("author", "Unknown");
+            String author = articleJson.optString("author", "");
             String imageUrl = articleJson.optString("hero_image_url", "");
-            String createdAt = articleJson.optString("created_at", "");
+            // Use published_at first, fallback to created_at
+            String dateStr = articleJson.optString("published_at", "");
+            if (dateStr.isEmpty()) {
+                dateStr = articleJson.optString("created_at", "");
+            }
             
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
             
-            return new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, createdAt, false);
+            return new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, dateStr, false);
         } catch (Exception e) {
             return null;
         }
@@ -596,31 +721,60 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    private void showFilteredArticlesLoading() {
-        filteredArticlesContainer.setVisibility(View.VISIBLE);
+    // Search UI helpers
+    private void showSearchLoading() {
+        searchProgressBar.setVisibility(View.VISIBLE);
+        noSearchResultsText.setVisibility(View.GONE);
+        searchResultsRecyclerView.setVisibility(View.GONE);
+    }
+
+    private void hideSearchLoading() {
+        searchProgressBar.setVisibility(View.GONE);
+    }
+
+    private void showSearchResultsList() {
+        searchResultsRecyclerView.setVisibility(View.VISIBLE);
+        noSearchResultsText.setVisibility(View.GONE);
+    }
+
+    private void showNoSearchResults() {
+        noSearchResultsText.setVisibility(View.VISIBLE);
+        searchResultsRecyclerView.setVisibility(View.GONE);
+    }
+
+    private void hideSearchResults() {
+        searchResultsContainer.setVisibility(View.GONE);
+        mainContentScrollView.setVisibility(View.VISIBLE);
+        searchResults.clear();
+        searchResultsAdapter.notifyDataSetChanged();
+    }
+
+    // Articles UI helpers
+    private void showArticlesLoading() {
         articlesProgressBar.setVisibility(View.VISIBLE);
         noArticlesText.setVisibility(View.GONE);
         filteredArticlesRecyclerView.setVisibility(View.GONE);
     }
 
-    private void hideFilteredArticlesLoading() {
+    private void hideArticlesLoading() {
         articlesProgressBar.setVisibility(View.GONE);
     }
 
-    private void showFilteredArticles() {
-        filteredArticlesContainer.setVisibility(View.VISIBLE);
+    private void showArticlesList() {
         filteredArticlesRecyclerView.setVisibility(View.VISIBLE);
         noArticlesText.setVisibility(View.GONE);
     }
 
     private void showNoArticles() {
-        filteredArticlesContainer.setVisibility(View.VISIBLE);
         noArticlesText.setVisibility(View.VISIBLE);
         filteredArticlesRecyclerView.setVisibility(View.GONE);
     }
 
     private void hideFilteredArticles() {
+        // Show header and main content again
+        binding.stickyHeader.setVisibility(View.VISIBLE);
         filteredArticlesContainer.setVisibility(View.GONE);
+        mainContentScrollView.setVisibility(View.VISIBLE);
         filteredArticles.clear();
         filteredArticlesAdapter.notifyDataSetChanged();
     }

@@ -117,9 +117,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
             if (currentArticle != null) {
                 titleTextView.setText(currentArticle.getTitle());
-                sourceTextView.setText(currentArticle.getSource());
-                dateTextView.setText(currentArticle.getDate());
-                categoryTextView.setText(currentArticle.getCategory());
+                
+                // Show only date, hide category
+                categoryTextView.setVisibility(View.GONE);
+                sourceTextView.setText(currentArticle.getDate());
+                dateTextView.setVisibility(View.GONE);
+                
                 contentTextView.setText(currentArticle.getContent());
 
                 // Load article image from URL using Picasso
@@ -127,13 +130,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     if (currentArticle.getImageUrl() != null && !currentArticle.getImageUrl().isEmpty()) {
                         com.squareup.picasso.Picasso.get()
                             .load(currentArticle.getImageUrl())
-                            .placeholder(R.drawable.placeholder_image)
-                            .error(R.drawable.ic_launcher_foreground)
+                            .noPlaceholder()
+                            .error(R.drawable.placeholder_image)
                             .fit()
                             .centerCrop()
                             .into(articleImageView);
                     } else {
-                        // Set placeholder if no URL is available
                         articleImageView.setImageResource(R.drawable.placeholder_image);
                     }
                 } catch (Exception e) {

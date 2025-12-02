@@ -32,7 +32,6 @@ public class EditProfileDialog extends AppCompatDialog {
 
     public interface ProfileUpdateListener {
         void onProfileUpdated(String displayName, String avatarBase64);
-        void onPasswordChanged();
     }
 
     private ProfileUpdateListener listener;
@@ -45,7 +44,6 @@ public class EditProfileDialog extends AppCompatDialog {
     private TextInputEditText displayNameEditText;
     private TextInputEditText emailEditText;
     private TextView changeAvatarText;
-    private TextView changePasswordText;
     private TextView cancelButton;
     private TextView saveButton;
     
@@ -80,16 +78,19 @@ public class EditProfileDialog extends AppCompatDialog {
         displayNameEditText = view.findViewById(R.id.displayNameEditText);
         emailEditText = view.findViewById(R.id.emailEditText);
         changeAvatarText = view.findViewById(R.id.changeAvatarText);
-        changePasswordText = view.findViewById(R.id.changePasswordText);
         cancelButton = view.findViewById(R.id.cancelButton);
         saveButton = view.findViewById(R.id.saveButton);
+        
+        // Close button
+        View closeButton = view.findViewById(R.id.closeButton);
+        if (closeButton != null) {
+            closeButton.setOnClickListener(v -> dismiss());
+        }
     }
 
     private void setupClickListeners() {
         changeAvatarText.setOnClickListener(v -> openImagePicker());
         avatarImageView.setOnClickListener(v -> openImagePicker());
-        
-        changePasswordText.setOnClickListener(v -> showChangePasswordDialog());
         
         cancelButton.setOnClickListener(v -> dismiss());
         
@@ -177,28 +178,5 @@ public class EditProfileDialog extends AppCompatDialog {
                 }
             });
         }
-    }
-
-    // Note: Avatar upload functionality removed - MediaEndpoints was non-functional
-    // To implement: Use external image hosting service (Cloudinary, ImgBB, etc.)
-    // or implement proper multipart/form-data upload in the future
-
-    private void showChangePasswordDialog() {
-        ChangePasswordDialog changePasswordDialog = new ChangePasswordDialog(getContext(), sessionManager, new ChangePasswordDialog.PasswordChangeListener() {
-            @Override
-            public void onPasswordChanged() {
-                Toast.makeText(getContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
-                if (listener != null) {
-                    listener.onPasswordChanged();
-                }
-            }
-
-            @Override
-            public void onError(String message) {
-                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-            }
-        });
-        
-        changePasswordDialog.show();
     }
 }

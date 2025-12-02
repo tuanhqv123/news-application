@@ -92,21 +92,22 @@ public class ChannelsAdapter extends RecyclerView.Adapter<ChannelsAdapter.Channe
             // Set channel name
             nameTextView.setText(channel.getName());
             
-            // Set description
+            // Set description - handle null and "null" string
             String description = channel.getDescription();
-            if (description != null && !description.isEmpty()) {
+            if (description != null && !description.isEmpty() && !description.equals("null")) {
                 descriptionTextView.setText(description);
                 descriptionTextView.setVisibility(View.VISIBLE);
             } else {
-                descriptionTextView.setVisibility(View.GONE);
+                descriptionTextView.setText("News channel");
+                descriptionTextView.setVisibility(View.VISIBLE);
             }
             
             // Load logo
             String logoUrl = channel.getLogoUrl();
-            if (logoUrl != null && !logoUrl.isEmpty()) {
+            if (logoUrl != null && !logoUrl.isEmpty() && !logoUrl.equals("null")) {
                 Picasso.get()
                         .load(logoUrl)
-                        .placeholder(R.drawable.default_avatar)
+                        .noPlaceholder()
                         .error(R.drawable.default_avatar)
                         .into(logoImageView);
             } else {
@@ -134,11 +135,11 @@ public class ChannelsAdapter extends RecyclerView.Adapter<ChannelsAdapter.Channe
             if (isFollowing) {
                 followButton.setText("Following");
                 followButton.setBackgroundResource(R.drawable.button_following_background);
-                followButton.setTextColor(itemView.getContext().getResources().getColor(R.color.gray));
+                followButton.setTextColor(android.graphics.Color.WHITE);
             } else {
                 followButton.setText("Follow");
                 followButton.setBackgroundResource(R.drawable.button_follow_background);
-                followButton.setTextColor(itemView.getContext().getResources().getColor(R.color.white));
+                followButton.setTextColor(android.graphics.Color.WHITE);
             }
         }
     }

@@ -89,7 +89,7 @@ public class JsonParsingUtils {
             // Use placeholder image if no URL
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
             
-            return new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, createdAt, false);
+            return new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
         } catch (Exception e) {
             Log.e(TAG, "Error parsing single article", e);
             return null;

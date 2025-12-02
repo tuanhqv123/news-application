@@ -30,6 +30,8 @@ public class Comment {
 
     /**
      * Create a Comment from JSON response
+     * API Response: {"id": 9, "article_id": "...", "user_id": "...", "body": "haha", 
+     *                "created_at": "...", "profile": {"display_name": "...", "avatar_url": "..."}}
      */
     public static Comment fromJson(JSONObject json) {
         Comment comment = new Comment();
@@ -37,21 +39,18 @@ public class Comment {
             comment.id = json.optInt("id", 0);
             comment.articleId = json.optString("article_id", "");
             comment.userId = json.optString("user_id", "");
-            comment.content = json.optString("content", "");
+            comment.content = json.optString("body", "");
             comment.createdAt = json.optString("created_at", "");
             comment.updatedAt = json.optString("updated_at", "");
             
-            // User info may be nested
-            JSONObject userObj = json.optJSONObject("user");
-            if (userObj != null) {
-                comment.userName = userObj.optString("display_name", 
-                                   userObj.optString("email", "Anonymous"));
-                comment.userAvatar = userObj.optString("avatar_url", "");
+            // Parse profile object
+            JSONObject profileObj = json.optJSONObject("profile");
+            if (profileObj != null) {
+                comment.userName = profileObj.optString("display_name", "Anonymous");
+                comment.userAvatar = profileObj.optString("avatar_url", "");
             } else {
-                comment.userName = json.optString("user_name", 
-                                   json.optString("display_name", "Anonymous"));
-                comment.userAvatar = json.optString("user_avatar", 
-                                     json.optString("avatar_url", ""));
+                comment.userName = "Anonymous";
+                comment.userAvatar = "";
             }
         } catch (Exception e) {
             e.printStackTrace();

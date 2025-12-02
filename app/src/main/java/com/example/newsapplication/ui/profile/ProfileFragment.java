@@ -179,12 +179,6 @@ public class ProfileFragment extends Fragment {
                     showLoggedInState();
                     Toast.makeText(getContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
                 }
-
-                @Override
-                public void onPasswordChanged() {
-                    // Password change completed successfully
-                    Toast.makeText(getContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
-                }
             });
         
         editProfileDialog.show();

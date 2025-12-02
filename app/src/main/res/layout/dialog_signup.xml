@@ -6,7 +6,11 @@
     android:background="@drawable/white_rounded_background"
     android:elevation="8dp"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="24dp"
+    android:minWidth="340dp">
 
     <!-- Header with close button -->
     <RelativeLayout
@@ -21,13 +25,13 @@
             android:layout_centerInParent="true"
             android:text="Sign Up"
             android:textColor="#000000"
-            android:textSize="20sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <ImageView
             android:id="@+id/closeButton"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:layout_alignParentEnd="true"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
@@ -43,20 +47,20 @@
         android:layout_marginBottom="16dp"
         android:hint="Full Name"
         app:boxBackgroundColor="#F5F5F5"
-        app:boxCornerRadiusBottomEnd="8dp"
-        app:boxCornerRadiusBottomStart="8dp"
-        app:boxCornerRadiusTopEnd="8dp"
-        app:boxCornerRadiusTopStart="8dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="#E0E0E0"
         app:hintTextColor="#666666">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/nameEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:inputType="textPersonName"
             android:textColor="#000000"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -68,20 +72,20 @@
         android:layout_marginBottom="16dp"
         android:hint="Email"
         app:boxBackgroundColor="#F5F5F5"
-        app:boxCornerRadiusBottomEnd="8dp"
-        app:boxCornerRadiusBottomStart="8dp"
-        app:boxCornerRadiusTopEnd="8dp"
-        app:boxCornerRadiusTopStart="8dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="#E0E0E0"
         app:hintTextColor="#666666">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/emailEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:inputType="textEmailAddress"
             android:textColor="#000000"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -93,10 +97,10 @@
         android:layout_marginBottom="16dp"
         android:hint="Password"
         app:boxBackgroundColor="#F5F5F5"
-        app:boxCornerRadiusBottomEnd="8dp"
-        app:boxCornerRadiusBottomStart="8dp"
-        app:boxCornerRadiusTopEnd="8dp"
-        app:boxCornerRadiusTopStart="8dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="#E0E0E0"
         app:hintTextColor="#666666"
         app:passwordToggleEnabled="true">
@@ -104,10 +108,10 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/passwordEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:inputType="textPassword"
             android:textColor="#000000"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -116,13 +120,13 @@
         android:id="@+id/confirmPasswordInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="24dp"
         android:hint="Confirm Password"
         app:boxBackgroundColor="#F5F5F5"
-        app:boxCornerRadiusBottomEnd="8dp"
-        app:boxCornerRadiusBottomStart="8dp"
-        app:boxCornerRadiusTopEnd="8dp"
-        app:boxCornerRadiusTopStart="8dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
         app:boxStrokeColor="#E0E0E0"
         app:hintTextColor="#666666"
         app:passwordToggleEnabled="true">
@@ -130,23 +134,21 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/confirmPasswordEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:inputType="textPassword"
             android:textColor="#000000"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
-
-
 
     <!-- Sign Up Button -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/signupButton"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="16dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="20dp"
         android:background="@drawable/logout_button_background"
-        android:text="Sign Up"
+        android:text="SIGN UP"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -155,8 +157,8 @@
     <LinearLayout
         android:id="@+id/googleSignupButton"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="16dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="24dp"
         android:background="@drawable/secondary_button_background"
         android:orientation="horizontal"
         android:gravity="center"
@@ -165,7 +167,7 @@
         <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@android:drawable/ic_menu_search"
+            android:src="@drawable/ic_google"
             android:layout_marginEnd="12dp" />
 
         <TextView
@@ -173,7 +175,8 @@
             android:layout_height="wrap_content"
             android:text="Sign up with Google"
             android:textColor="#333333"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
@@ -182,6 +185,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_marginTop="8dp"
         android:orientation="horizontal">
 
         <TextView
@@ -189,7 +193,7 @@
             android:layout_height="wrap_content"
             android:text="Already have an account? "
             android:textColor="#666666"
-            android:textSize="12sp" />
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/loginLinkText"
@@ -197,7 +201,7 @@
             android:layout_height="wrap_content"
             android:text="Login"
             android:textColor="#F39E3A"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
     </LinearLayout>

@@ -4,19 +4,38 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@drawable/dialog_background">
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="24dp"
+    android:minWidth="340dp"
+    android:background="@drawable/white_rounded_background">
 
-    <!-- Title -->
-    <TextView
+    <!-- Header with close button -->
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Edit Profile"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#000000"
-        android:gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Edit Profile"
+            android:textColor="#000000"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/closeButton"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_alignParentEnd="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="#666666" />
+
+    </RelativeLayout>
 
     <!-- Avatar Section -->
     <LinearLayout
@@ -24,7 +43,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="28dp">
 
         <ImageView
             android:id="@+id/avatarImageView"
@@ -40,9 +59,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Change Avatar"
-            android:textColor="#2196F3"
+            android:textColor="#F39E3A"
             android:textSize="14sp"
-            android:layout_marginTop="8dp"
+            android:textStyle="bold"
+            android:layout_marginTop="12dp"
             android:clickable="true"
             android:focusable="true"
             android:background="?android:attr/selectableItemBackgroundBorderless"
@@ -54,18 +74,23 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:boxStrokeColor="#2196F3"
-        app:hintTextColor="#2196F3">
+        android:layout_marginBottom="20dp"
+        android:hint="Display Name"
+        app:boxBackgroundColor="#F5F5F5"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxStrokeColor="#E0E0E0"
+        app:hintTextColor="#666666">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/displayNameEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Display Name"
+            android:layout_height="56dp"
             android:inputType="textPersonName"
             android:textColor="#000000"
-            android:textColorHint="#757575" />
+            android:textSize="16sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -73,69 +98,67 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:boxStrokeColor="#2196F3"
-        app:hintTextColor="#2196F3">
+        android:layout_marginBottom="20dp"
+        android:hint="Email"
+        app:boxBackgroundColor="#F5F5F5"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxStrokeColor="#E0E0E0"
+        app:hintTextColor="#666666">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/emailEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Email"
+            android:layout_height="56dp"
             android:inputType="textEmailAddress"
-            android:textColor="#757575"
-            android:textColorHint="#757575"
+            android:textColor="#999999"
+            android:textSize="16sp"
             android:focusable="false"
             android:clickable="false" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Change Password Button -->
+    <!-- Change Password Link -->
     <TextView
         android:id="@+id/changePasswordText"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Change Password"
-        android:textColor="#2196F3"
+        android:textColor="#F39E3A"
         android:textSize="14sp"
-        android:layout_marginBottom="24dp"
+        android:textStyle="bold"
+        android:layout_marginBottom="28dp"
         android:clickable="true"
         android:focusable="true"
         android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:padding="8dp" />
+        android:padding="4dp" />
 
-    <!-- Action Buttons -->
-    <LinearLayout
+    <!-- Save Button -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/saveButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/logout_button_background"
+        android:text="SAVE CHANGES"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- Cancel Button -->
+    <TextView
+        android:id="@+id/cancelButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end">
-
-        <TextView
-            android:id="@+id/cancelButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cancel"
-            android:textColor="#757575"
-            android:textSize="14sp"
-            android:padding="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless" />
-
-        <TextView
-            android:id="@+id/saveButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Save"
-            android:textColor="#2196F3"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:padding="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless" />
-
-    </LinearLayout>
+        android:text="Cancel"
+        android:textColor="#666666"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="12dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?android:attr/selectableItemBackgroundBorderless" />
 
 </LinearLayout>

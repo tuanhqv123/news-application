@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.newsapplication.ArticleDetailActivity;
 import com.example.newsapplication.MainActivity;
 import com.example.newsapplication.R;
-import com.example.newsapplication.adapter.breaking.BreakingNewsAdapter;
+import com.example.newsapplication.adapter.BreakingNewsAdapter;
 import com.example.newsapplication.adapter.ChannelsAdapter;
 import com.example.newsapplication.adapter.NewsAdapter;
 import com.example.newsapplication.databinding.FragmentHomeBinding;
@@ -104,9 +104,8 @@ public class HomeFragment extends Fragment {
         followingChannelsAdapter = new ChannelsAdapter(followingChannelsList, new ChannelsAdapter.OnChannelClickListener() {
             @Override
             public void onChannelClick(Channel channel) {
-                // Navigate to channel articles
-                Toast.makeText(getContext(), "Loading " + channel.getName() + " articles...", Toast.LENGTH_SHORT).show();
-                loadArticlesFromChannel(channel.getId());
+                // Navigate to channel articles activity
+                navigateToChannelArticles(channel);
             }
 
             @Override
@@ -273,59 +272,56 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateTabSelection(android.view.View selectedTab) {
-        // Reset all tabs to unselected state
-        binding.feedsTab.setBackgroundResource(R.drawable.tab_background);
-        binding.feedsTab.setTextColor(getResources().getColor(android.R.color.black));
+        // Reset all tabs to unselected state (orange background, white text)
+        binding.feedsTab.setBackgroundResource(android.R.color.transparent);
+        binding.feedsTab.setTextColor(android.graphics.Color.WHITE);
 
-        binding.popularTab.setBackgroundResource(R.drawable.tab_background);
-        binding.popularTab.setTextColor(getResources().getColor(android.R.color.black));
+        binding.popularTab.setBackgroundResource(android.R.color.transparent);
+        binding.popularTab.setTextColor(android.graphics.Color.WHITE);
 
-        binding.followingTab.setBackgroundResource(R.drawable.tab_background);
-        binding.followingTab.setTextColor(getResources().getColor(android.R.color.black));
+        binding.followingTab.setBackgroundResource(android.R.color.transparent);
+        binding.followingTab.setTextColor(android.graphics.Color.WHITE);
 
-        // Highlight selected tab with rounded background
+        // Highlight selected tab with white background and orange text
         selectedTab.setBackgroundResource(R.drawable.tab_selected_background);
         if (selectedTab.getId() == R.id.feedsTab) {
-            binding.feedsTab.setTextColor(android.graphics.Color.WHITE);
+            binding.feedsTab.setTextColor(0xFFF39E3A); // Orange color
         } else if (selectedTab.getId() == R.id.popularTab) {
-            binding.popularTab.setTextColor(android.graphics.Color.WHITE);
+            binding.popularTab.setTextColor(0xFFF39E3A);
         } else if (selectedTab.getId() == R.id.followingTab) {
-            binding.followingTab.setTextColor(android.graphics.Color.WHITE);
+            binding.followingTab.setTextColor(0xFFF39E3A);
         }
     }
 
     private void loadFeedsContent() {
-        // Hide following section, show news sections
+        // Show feeds content, hide following
+        binding.feedsPopularContainer.setVisibility(View.VISIBLE);
         followingContainer.setVisibility(View.GONE);
-        binding.breakingNewsTitle.setVisibility(View.VISIBLE);
-        binding.seeMoreTextView.setVisibility(View.VISIBLE);
-        binding.breakingNewsRecyclerView.setVisibility(View.VISIBLE);
-        binding.popularNewsTitle.setVisibility(View.VISIBLE);
-        binding.popularNewsRecyclerView.setVisibility(View.VISIBLE);
         
-        loadArticlesFromAPI();
+        // Update title
+        binding.popularNewsTitle.setText("Latest News");
+        binding.popularNewsTitle.setVisibility(View.VISIBLE);
+        
+        // Load articles from category_id = 1
+        loadArticlesFromCategory(1);
     }
 
     private void loadPopularContent() {
-        // Hide following section, show news sections
+        // Show popular content, hide following
+        binding.feedsPopularContainer.setVisibility(View.VISIBLE);
         followingContainer.setVisibility(View.GONE);
-        binding.breakingNewsTitle.setVisibility(View.VISIBLE);
-        binding.seeMoreTextView.setVisibility(View.VISIBLE);
-        binding.breakingNewsRecyclerView.setVisibility(View.VISIBLE);
-        binding.popularNewsTitle.setVisibility(View.VISIBLE);
-        binding.popularNewsRecyclerView.setVisibility(View.VISIBLE);
         
+        // Update title
+        binding.popularNewsTitle.setText("Popular News");
+        binding.popularNewsTitle.setVisibility(View.VISIBLE);
+        
+        // Load all articles (no category filter)
         loadArticlesFromAPI();
     }
 
     private void loadFollowingContent() {
-        // Show following section, hide news sections
-        binding.breakingNewsTitle.setVisibility(View.GONE);
-        binding.seeMoreTextView.setVisibility(View.GONE);
-        binding.breakingNewsRecyclerView.setVisibility(View.GONE);
-        binding.popularNewsTitle.setVisibility(View.GONE);
-        binding.popularNewsRecyclerView.setVisibility(View.GONE);
-        
+        // Show following section, hide feeds/popular
+        binding.feedsPopularContainer.setVisibility(View.GONE);
         followingContainer.setVisibility(View.VISIBLE);
         
         if (!sessionManager.isLoggedIn()) {
@@ -337,6 +333,14 @@ public class HomeFragment extends Fragment {
         
         // Load followed channels from API
         loadFollowedChannels();
+    }
+
+    private void navigateToChannelArticles(Channel channel) {
+        // Navigate to explore tab and show channel articles
+        if (getActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            mainActivity.navigateToExploreWithChannel(channel.getId(), channel.getName(), channel.isFollowing());
+        }
     }
 
     private void loadFollowedChannels() {
@@ -409,7 +413,10 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadMockNews() {
-        // Load articles from API instead of mock data
+        // Load breaking news from category 9
+        loadBreakingNews();
+        
+        // Load articles from API
         loadArticlesFromAPI();
         
         // Load bookmarks if user is logged in
@@ -417,7 +424,57 @@ public class HomeFragment extends Fragment {
             loadBookmarksFromAPI();
         }
     }
+    
+    private void loadBreakingNews() {
+        android.util.Log.d(TAG, "=== Loading breaking news from category 9 ===");
+        
+        if (newsRepository != null) {
+            newsRepository.getArticles(1, 5, 9, new NewsRepository.RepositoryCallback<JSONObject>() {
+                @Override
+                public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                    if (response.isSuccess() && response.getData() != null) {
+                        breakingNewsList.clear();
+                        List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
+                        breakingNewsList.addAll(articles);
+                        
+                        if (breakingNewsAdapter != null) {
+                            breakingNewsAdapter.notifyDataSetChanged();
+                        }
+                    }
+                }
+            });
+        }
+    }
 
+    private void loadArticlesFromCategory(int categoryId) {
+        android.util.Log.d(TAG, "=== Loading articles from category: " + categoryId + " ===");
+        
+        if (newsRepository != null) {
+            newsRepository.getArticles(1, 20, categoryId, new NewsRepository.RepositoryCallback<JSONObject>() {
+                @Override
+                public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                    android.util.Log.d(TAG, "API Response received - Success: " + response.isSuccess());
+                    
+                    if (response.isSuccess() && response.getData() != null) {
+                        // Clear popular news only (breaking news loaded separately)
+                        popularNewsList.clear();
+                        
+                        // Parse articles using utility
+                        List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
+                        popularNewsList.addAll(articles);
+                        
+                        // Update UI
+                        if (newsAdapter != null) {
+                            newsAdapter.notifyDataSetChanged();
+                        }
+                    } else {
+                        android.util.Log.e(TAG, "Failed to load articles: " + response.getErrorMessage());
+                    }
+                }
+            });
+        }
+    }
+    
     private void loadArticlesFromAPI() {
         android.util.Log.d(TAG, "=== Starting loadArticlesFromAPI() ===");
         
@@ -429,26 +486,14 @@ public class HomeFragment extends Fragment {
                     android.util.Log.d(TAG, "API Response received - Success: " + response.isSuccess());
                     
                     if (response.isSuccess() && response.getData() != null) {
-                        // Clear existing data
-                        breakingNewsList.clear();
+                        // Clear popular news only (breaking news loaded separately)
                         popularNewsList.clear();
                         
                         // Parse articles using utility
                         List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
-                        
-                        // Split into breaking and popular
-                        for (int i = 0; i < articles.size(); i++) {
-                            if (i < 5) {
-                                breakingNewsList.add(articles.get(i));
-                            } else if (i < 15) {
-                                popularNewsList.add(articles.get(i));
-                            }
-                        }
+                        popularNewsList.addAll(articles);
                         
                         // Update UI
-                        if (breakingNewsAdapter != null) {
-                            breakingNewsAdapter.notifyDataSetChanged();
-                        }
                         if (newsAdapter != null) {
                             newsAdapter.notifyDataSetChanged();
                         }

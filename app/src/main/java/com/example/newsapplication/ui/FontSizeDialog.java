@@ -70,6 +70,8 @@ public class FontSizeDialog extends Dialog {
         // Apply button
         applyFontButton.setOnClickListener(v -> {
             int selectedSize = getSelectedFontSize();
+            // Save the font size
+            fontSizeManager.setFontSize(selectedSize);
             if (callback != null) {
                 callback.onFontSizeApplied(selectedSize);
             }

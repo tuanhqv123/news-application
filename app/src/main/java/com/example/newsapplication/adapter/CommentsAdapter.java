@@ -94,7 +94,7 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 Picasso.get()
                         .load(avatarUrl)
-                        .placeholder(R.drawable.default_avatar)
+                        .noPlaceholder()
                         .error(R.drawable.default_avatar)
                         .into(avatarImageView);
             } else {
