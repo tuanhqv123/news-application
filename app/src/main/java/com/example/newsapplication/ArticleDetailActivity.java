@@ -218,11 +218,16 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
     
     private void loadHtmlContent(String htmlContent) {
-        // Wrap HTML content with proper styling
+        int fontSize = (int) fontSizeManager.getFontSize();
+        loadHtmlContentWithFontSize(htmlContent, fontSize);
+    }
+    
+    private void loadHtmlContentWithFontSize(String htmlContent, int fontSize) {
+        // Wrap HTML content with proper styling using dynamic font size
         String styledHtml = "<!DOCTYPE html><html><head>" +
                 "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
                 "<style>" +
-                "body { font-family: sans-serif; font-size: 16px; line-height: 1.6; color: #333; margin: 0; padding: 0; }" +
+                "body { font-family: sans-serif; font-size: " + fontSize + "px; line-height: 1.6; color: #333; margin: 0; padding: 0; }" +
                 "img { max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; }" +
                 "p { margin: 12px 0; }" +
                 "a { color: #0866FF; text-decoration: none; }" +
@@ -522,13 +527,16 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private void applyFontSize() {
         float fontSize = fontSizeManager.getFontSize();
 
-        // Apply font size to content text (main article content)
+        // Apply font size to plain text content
         contentTextView.setTextSize(fontSize);
-
-        // You can also adjust other text elements if needed
-        // For now, we'll keep title and other metadata at their current sizes
-        // titleTextView.setTextSize(fontSize + 2); // Slightly larger for title
-        // sourceTextView.setTextSize(fontSize - 2); // Slightly smaller for source
+        
+        // Apply font size to WebView HTML content
+        if (currentArticle != null && contentWebView.getVisibility() == View.VISIBLE) {
+            String content = currentArticle.getContent();
+            if (content != null && !content.isEmpty() && isHtmlContent(content)) {
+                loadHtmlContentWithFontSize(content, (int) fontSize);
+            }
+        }
     }
 
     private void showFontSizeDialog() {
