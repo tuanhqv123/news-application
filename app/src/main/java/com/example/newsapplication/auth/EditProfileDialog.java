@@ -21,7 +21,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.appcompat.app.AppCompatDialog;
 
 import com.example.newsapplication.R;
-import com.example.newsapplication.api.endpoints.MediaEndpoints;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -38,7 +37,6 @@ public class EditProfileDialog extends AppCompatDialog {
 
     private ProfileUpdateListener listener;
     private UserSessionManager sessionManager;
-    private MediaEndpoints mediaEndpoints;
     private FragmentManager fragmentManager;
     private Activity activity;
     private com.example.newsapplication.repository.NewsRepository newsRepository;
@@ -61,7 +59,6 @@ public class EditProfileDialog extends AppCompatDialog {
         this.fragmentManager = fragmentManager;
         this.sessionManager = new UserSessionManager(activity);
         this.newsRepository = new com.example.newsapplication.repository.NewsRepository(activity);
-        this.mediaEndpoints = new MediaEndpoints(new com.example.newsapplication.api.ApiClient(activity));
     }
 
     @Override
@@ -182,23 +179,9 @@ public class EditProfileDialog extends AppCompatDialog {
         }
     }
 
-    private void uploadAvatar(String base64Image) {
-        mediaEndpoints.uploadImage(base64Image, new com.example.newsapplication.api.ApiClient.ApiCallback<org.json.JSONObject>() {
-            @Override
-            public void onSuccess(com.example.newsapplication.api.ApiResponse<org.json.JSONObject> response) {
-                // Handle successful upload if needed
-                if (response.isSuccess()) {
-                    // Could store the new avatar URL in session if API returns it
-                }
-            }
-
-            @Override
-            public void onError(com.example.newsapplication.api.ApiResponse<org.json.JSONObject> error) {
-                // Handle upload error
-                android.util.Log.e("EditProfile", "Avatar upload failed: " + error.getErrorMessage());
-            }
-        });
-    }
+    // Note: Avatar upload functionality removed - MediaEndpoints was non-functional
+    // To implement: Use external image hosting service (Cloudinary, ImgBB, etc.)
+    // or implement proper multipart/form-data upload in the future
 
     private void showChangePasswordDialog() {
         ChangePasswordDialog changePasswordDialog = new ChangePasswordDialog(getContext(), sessionManager, new ChangePasswordDialog.PasswordChangeListener() {

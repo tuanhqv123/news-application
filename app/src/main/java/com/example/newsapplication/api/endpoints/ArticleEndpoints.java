@@ -1,13 +1,18 @@
 package com.example.newsapplication.api.endpoints;
 
+import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiConfig;
+import com.example.newsapplication.api.ApiResponse;
+import com.example.newsapplication.utils.UrlBuilder;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
  * API endpoints for Article management
  */
 public class ArticleEndpoints {
+    private static final String TAG = "ArticleEndpoints";
     private final ApiClient apiClient;
 
     public ArticleEndpoints(ApiClient apiClient) {
@@ -21,7 +26,7 @@ public class ArticleEndpoints {
      */
     public void getArticles(ApiClient.ApiCallback<JSONObject> callback) {
         String endpoint = ApiConfig.API_VERSION + "/articles/";
-        android.util.Log.d("ArticleEndpoints", "Calling GET " + endpoint);
+        Log.d(TAG, "Calling GET " + endpoint);
         apiClient.get(endpoint, callback);
     }
 
@@ -29,15 +34,15 @@ public class ArticleEndpoints {
      * Get published articles with pagination and category filter
      */
     public void getArticles(int page, int limit, Integer categoryId, ApiClient.ApiCallback<JSONObject> callback) {
-        StringBuilder endpoint = new StringBuilder(ApiConfig.API_VERSION + "/articles/?");
-        endpoint.append("page=").append(page);
-        endpoint.append("&limit=").append(limit);
-        if (categoryId != null) {
-            endpoint.append("&category=").append(categoryId);
-        }
+        String baseUrl = ApiConfig.API_VERSION + "/articles/";
+        String endpoint = UrlBuilder.buildUrlWithOptionalParams(baseUrl,
+            "page", page,
+            "limit", limit,
+            "category", categoryId
+        );
         
-        android.util.Log.d("ArticleEndpoints", "Calling GET " + endpoint.toString());
-        apiClient.get(endpoint.toString(), callback);
+        Log.d(TAG, "Calling GET " + endpoint);
+        apiClient.get(endpoint, callback);
     }
 
     /**
@@ -52,8 +57,13 @@ public class ArticleEndpoints {
      * Search articles
      */
     public void searchArticles(String query, int page, int limit, ApiClient.ApiCallback<JSONObject> callback) {
-        String endpoint = ApiConfig.API_VERSION + "/articles/search?q=" + query + "&page=" + page + "&limit=" + limit;
-        android.util.Log.d("ArticleEndpoints", "Calling GET " + endpoint);
+        String baseUrl = ApiConfig.API_VERSION + "/articles/search";
+        String endpoint = UrlBuilder.buildUrlWithOptionalParams(baseUrl,
+            "q", query,
+            "page", page,
+            "limit", limit
+        );
+        Log.d(TAG, "Calling GET " + endpoint);
         apiClient.get(endpoint, callback);
     }
 
@@ -75,8 +85,10 @@ public class ArticleEndpoints {
         JSONObject requestBody = new JSONObject();
         try {
             requestBody.put("content", content);
-        } catch (Exception e) {
-            // Handle error
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to build addComment request body", e);
+            callback.onError(ApiResponse.error("Invalid request data", 0));
+            return;
         }
         apiClient.post(endpoint, requestBody, callback);
     }
@@ -126,8 +138,10 @@ public class ArticleEndpoints {
             if (sourceUrl != null) requestBody.put("source_url", sourceUrl);
             if (heroImageUrl != null) requestBody.put("hero_image_url", heroImageUrl);
             if (language != null) requestBody.put("language", language);
-        } catch (Exception e) {
-            // Handle error
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to build createArticle request body", e);
+            callback.onError(ApiResponse.error("Invalid request data", 0));
+            return;
         }
         apiClient.post(endpoint, requestBody, callback);
     }

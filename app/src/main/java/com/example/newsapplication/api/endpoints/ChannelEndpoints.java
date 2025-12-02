@@ -1,13 +1,18 @@
 package com.example.newsapplication.api.endpoints;
 
+import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiConfig;
+import com.example.newsapplication.api.ApiResponse;
+import com.example.newsapplication.utils.UrlBuilder;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
  * API endpoints for Channel management
  */
 public class ChannelEndpoints {
+    private static final String TAG = "ChannelEndpoints";
     private final ApiClient apiClient;
 
     public ChannelEndpoints(ApiClient apiClient) {
@@ -70,8 +75,10 @@ public class ChannelEndpoints {
             if (description != null) requestBody.put("description", description);
             if (rssUrl != null) requestBody.put("rss_url", rssUrl);
             if (logoUrl != null) requestBody.put("logo_url", logoUrl);
-        } catch (Exception e) {
-            // Handle error
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to build createChannel request body", e);
+            callback.onError(ApiResponse.error("Invalid request data", 0));
+            return;
         }
         apiClient.post(ApiConfig.API_VERSION + "/channels/admin/create", requestBody, callback);
     }
@@ -80,30 +87,16 @@ public class ChannelEndpoints {
      * Update a channel (admin only)
      */
     public void updateChannel(int channelId, String name, String description, String rssUrl, String logoUrl, Boolean isActive, ApiClient.ApiCallback<JSONObject> callback) {
-        StringBuilder url = new StringBuilder(ApiConfig.API_VERSION + "/channels/admin/" + channelId + "?");
-        boolean first = true;
+        String baseUrl = ApiConfig.API_VERSION + "/channels/admin/" + channelId;
+        String url = UrlBuilder.buildUrlWithOptionalParams(baseUrl,
+            "name", name,
+            "description", description,
+            "rss_url", rssUrl,
+            "logo_url", logoUrl,
+            "is_active", isActive
+        );
         
-        if (name != null) {
-            url.append("name=").append(name);
-            first = false;
-        }
-        if (description != null) {
-            url.append(first ? "" : "&").append("description=").append(description);
-            first = false;
-        }
-        if (rssUrl != null) {
-            url.append(first ? "" : "&").append("rss_url=").append(rssUrl);
-            first = false;
-        }
-        if (logoUrl != null) {
-            url.append(first ? "" : "&").append("logo_url=").append(logoUrl);
-            first = false;
-        }
-        if (isActive != null) {
-            url.append(first ? "" : "&").append("is_active=").append(isActive);
-        }
-        
-        apiClient.put(url.toString(), null, callback);
+        apiClient.put(url, null, callback);
     }
 
     /**

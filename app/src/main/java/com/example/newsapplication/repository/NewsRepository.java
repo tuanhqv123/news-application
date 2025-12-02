@@ -1,9 +1,11 @@
 package com.example.newsapplication.repository;
 
 import android.content.Context;
+import android.util.Log;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiResponse;
 import com.example.newsapplication.api.endpoints.*;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -11,13 +13,13 @@ import org.json.JSONObject;
  * Provides a clean API for the UI layer to fetch/manipulate data.
  */
 public class NewsRepository {
+    private static final String TAG = "NewsRepository";
     private final ApiClient apiClient;
     private final AuthEndpoints authEndpoints;
     private final ArticleEndpoints articleEndpoints;
     private final UserEndpoints userEndpoints;
     private final CategoryEndpoints categoryEndpoints;
     private final ChannelEndpoints channelEndpoints;
-    private final MediaEndpoints mediaEndpoints;
 
     public NewsRepository(Context context) {
         this.apiClient = new ApiClient(context);
@@ -26,7 +28,6 @@ public class NewsRepository {
         this.userEndpoints = new UserEndpoints(apiClient);
         this.categoryEndpoints = new CategoryEndpoints(apiClient);
         this.channelEndpoints = new ChannelEndpoints(apiClient);
-        this.mediaEndpoints = new MediaEndpoints(apiClient);
     }
 
     // ==================== Auth ====================
@@ -42,7 +43,7 @@ public class NewsRepository {
                             apiClient.setAuthToken(token);
                         }
                     } catch (Exception e) {
-                        // Handle token extraction error
+                        Log.e(TAG, "Failed to extract access token from login response", e);
                     }
                 }
                 callback.onResult(response);
@@ -147,13 +148,7 @@ public class NewsRepository {
         channelEndpoints.getChannelArticles(channelId, page, limit, wrapCallback(callback));
     }
 
-    public void subscribeChannel(int channelId, RepositoryCallback<JSONObject> callback) {
-        categoryEndpoints.subscribeChannel(channelId, wrapCallback(callback));
-    }
 
-    public void unsubscribeChannel(int channelId, RepositoryCallback<JSONObject> callback) {
-        categoryEndpoints.unsubscribeChannel(channelId, wrapCallback(callback));
-    }
 
     // ==================== User Profile ====================
 
@@ -166,8 +161,10 @@ public class NewsRepository {
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 requestBody.put("avatar_url", avatarUrl);
             }
-        } catch (Exception e) {
-            // Handle error
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to build updateProfile request body", e);
+            callback.onResult(ApiResponse.error("Invalid request data", 0));
+            return;
         }
         userEndpoints.updateAuthProfile(requestBody, wrapCallback(callback));
     }
@@ -228,16 +225,6 @@ public class NewsRepository {
 
     public void deleteChannel(int channelId, RepositoryCallback<JSONObject> callback) {
         channelEndpoints.deleteChannel(channelId, wrapCallback(callback));
-    }
-
-    // ==================== Media ====================
-
-    public void uploadFile(String filePath, String description, RepositoryCallback<JSONObject> callback) {
-        mediaEndpoints.uploadFile(filePath, description, wrapCallback(callback));
-    }
-
-    public void uploadImage(String base64Image, RepositoryCallback<JSONObject> callback) {
-        mediaEndpoints.uploadImage(base64Image, wrapCallback(callback));
     }
 
     // ==================== Helper Methods ====================

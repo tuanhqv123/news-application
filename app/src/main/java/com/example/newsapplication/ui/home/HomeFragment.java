@@ -25,6 +25,7 @@ import com.example.newsapplication.adapter.NewsAdapter;
 import com.example.newsapplication.databinding.FragmentHomeBinding;
 import com.example.newsapplication.model.Article;
 import com.example.newsapplication.model.Channel;
+import com.example.newsapplication.utils.JsonParsingUtils;
 
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
@@ -149,7 +150,8 @@ public class HomeFragment extends Fragment {
             public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
                 if (response.isSuccess() && response.getData() != null) {
                     popularNewsList.clear();
-                    parseArticlesIntoList(response.getData(), popularNewsList);
+                    List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
+                    popularNewsList.addAll(articles);
                     newsAdapter.notifyDataSetChanged();
                 } else {
                     Toast.makeText(getContext(), "Failed to load channel articles", Toast.LENGTH_SHORT).show();
@@ -355,34 +357,11 @@ public class HomeFragment extends Fragment {
 
     private void parseFollowedChannels(JSONObject data) {
         followingChannelsList.clear();
-        try {
-            JSONArray channelsArray = null;
-            
-            // API format: {"success":true,"data":{"channels":[...]}}
-            if (data.has("data")) {
-                Object dataObj = data.get("data");
-                if (dataObj instanceof JSONObject) {
-                    JSONObject dataJson = (JSONObject) dataObj;
-                    if (dataJson.has("channels")) {
-                        channelsArray = dataJson.getJSONArray("channels");
-                    }
-                } else if (dataObj instanceof JSONArray) {
-                    channelsArray = (JSONArray) dataObj;
-                }
-            } else if (data.has("channels")) {
-                channelsArray = data.getJSONArray("channels");
-            }
-            
-            if (channelsArray != null) {
-                for (int i = 0; i < channelsArray.length(); i++) {
-                    JSONObject channelJson = channelsArray.getJSONObject(i);
-                    Channel channel = Channel.fromJson(channelJson);
-                    channel.setFollowing(true); // They are followed channels
-                    followingChannelsList.add(channel);
-                }
-            }
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing followed channels", e);
+        
+        List<Channel> channels = JsonParsingUtils.parseChannels(data);
+        for (Channel channel : channels) {
+            channel.setFollowing(true); // They are followed channels
+            followingChannelsList.add(channel);
         }
         
         if (followingChannelsList.isEmpty()) {
@@ -447,31 +426,31 @@ public class HomeFragment extends Fragment {
             newsRepository.getArticles(new NewsRepository.RepositoryCallback<JSONObject>() {
                 @Override
                 public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
-                    android.util.Log.d(TAG, "API Response received - Success: " + response.isSuccess() + ", Data: " + (response.getData() != null ? "present" : "null"));
+                    android.util.Log.d(TAG, "API Response received - Success: " + response.isSuccess());
                     
                     if (response.isSuccess() && response.getData() != null) {
-                        try {
-                            // Process the articles from API response
-                            android.util.Log.d(TAG, "Articles loaded from API: " + response.getData().toString());
-                            
-                            // Parse articles array from response
-                            JSONObject data = response.getData();
-                            
-                            // Clear existing data and add from API
-                            breakingNewsList.clear();
-                            popularNewsList.clear();
-                            
-                            parseArticlesFromResponse(data);
-                            
-                            // Update UI
-                            if (breakingNewsAdapter != null) {
-                                breakingNewsAdapter.notifyDataSetChanged();
+                        // Clear existing data
+                        breakingNewsList.clear();
+                        popularNewsList.clear();
+                        
+                        // Parse articles using utility
+                        List<Article> articles = JsonParsingUtils.parseArticles(response.getData());
+                        
+                        // Split into breaking and popular
+                        for (int i = 0; i < articles.size(); i++) {
+                            if (i < 5) {
+                                breakingNewsList.add(articles.get(i));
+                            } else if (i < 15) {
+                                popularNewsList.add(articles.get(i));
                             }
-                            if (newsAdapter != null) {
-                                newsAdapter.notifyDataSetChanged();
-                            }
-                        } catch (Exception e) {
-                            android.util.Log.e(TAG, "Error parsing articles: " + e.getMessage(), e);
+                        }
+                        
+                        // Update UI
+                        if (breakingNewsAdapter != null) {
+                            breakingNewsAdapter.notifyDataSetChanged();
+                        }
+                        if (newsAdapter != null) {
+                            newsAdapter.notifyDataSetChanged();
                         }
                     } else {
                         android.util.Log.e(TAG, "Failed to load articles: " + response.getErrorMessage());
@@ -481,120 +460,7 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private void parseArticlesFromResponse(JSONObject data) {
-        try {
-            JSONArray articlesArray = null;
-            if (data.has("data") && data.opt("data") instanceof JSONObject) {
-                JSONObject dataObj = data.getJSONObject("data");
-                if (dataObj.has("articles")) {
-                    articlesArray = dataObj.getJSONArray("articles");
-                } else if (dataObj.has("results")) {
-                    articlesArray = dataObj.getJSONArray("results");
-                }
-            } else if (data.has("articles")) {
-                articlesArray = data.getJSONArray("articles");
-            } else if (data.has("results")) {
-                articlesArray = data.getJSONArray("results");
-            } else if (data.opt("data") instanceof JSONArray) {
-                articlesArray = data.getJSONArray("data");
-            }
-            
-            // Convert JSON to Article objects
-            if (articlesArray != null && articlesArray.length() > 0) {
-                android.util.Log.d(TAG, "Processing " + articlesArray.length() + " articles");
-                for (int i = 0; i < articlesArray.length(); i++) {
-                    JSONObject articleJson = articlesArray.getJSONObject(i);
-                    Article article = parseArticleFromJson(articleJson);
-                    
-                    if (article != null) {
-                        // Add to appropriate list (first 5 to breaking, rest to popular)
-                        if (i < 5) {
-                            breakingNewsList.add(article);
-                        } else if (i < 15) {
-                            popularNewsList.add(article);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing articles response", e);
-        }
-    }
 
-    private void parseArticlesIntoList(JSONObject data, List<Article> targetList) {
-        try {
-            JSONArray articlesArray = null;
-            if (data.has("data") && data.opt("data") instanceof JSONObject) {
-                JSONObject dataObj = data.getJSONObject("data");
-                if (dataObj.has("articles")) {
-                    articlesArray = dataObj.getJSONArray("articles");
-                } else if (dataObj.has("results")) {
-                    articlesArray = dataObj.getJSONArray("results");
-                }
-            } else if (data.has("articles")) {
-                articlesArray = data.getJSONArray("articles");
-            } else if (data.has("results")) {
-                articlesArray = data.getJSONArray("results");
-            } else if (data.opt("data") instanceof JSONArray) {
-                articlesArray = data.getJSONArray("data");
-            }
-            
-            if (articlesArray != null) {
-                for (int i = 0; i < articlesArray.length(); i++) {
-                    JSONObject articleJson = articlesArray.getJSONObject(i);
-                    Article article = parseArticleFromJson(articleJson);
-                    if (article != null) {
-                        targetList.add(article);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing articles", e);
-        }
-    }
-    
-    private Article parseArticleFromJson(JSONObject articleJson) {
-        try {
-            String id = articleJson.optString("id", "");
-            String title = articleJson.optString("title", "Unknown Title");
-            String summary = articleJson.optString("summary", "");
-            String content = articleJson.optString("content", "");
-            
-            // Handle different field names for source
-            String source = articleJson.optString("source", "");
-            if (source.isEmpty()) {
-                source = articleJson.optString("source_url", "Unknown Source");
-                // Extract domain from URL if it's a URL
-                if (source.startsWith("http")) {
-                    try {
-                        java.net.URL url = new java.net.URL(source);
-                        source = url.getHost();
-                    } catch (Exception e) {
-                        // Keep original if parsing fails
-                    }
-                }
-            }
-            
-            // Handle channel_id as category if category not available
-            String category = articleJson.optString("category", "");
-            if (category.isEmpty()) {
-                int channelId = articleJson.optInt("channel_id", 0);
-                category = "Channel " + channelId;
-            }
-            
-            String author = articleJson.optString("author", "Unknown Author");
-            String imageUrl = articleJson.optString("hero_image_url", "");
-            String createdAt = articleJson.optString("created_at", "");
-            
-            // Use placeholder image if no URL
-            int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
-            
-            return new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, createdAt, false);
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "Error parsing article: " + e.getMessage(), e);
-            return null;
-        }
-    }
 
     private void loadBookmarksFromAPI() {
         if (newsRepository != null) {
@@ -602,74 +468,36 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
                     if (response.isSuccess() && response.getData() != null) {
-                        try {
-                            android.util.Log.d(TAG, "Bookmarks loaded from API: " + response.getData().toString());
-                            
-                            // Parse bookmarks and update UI if needed
-                            JSONObject data = response.getData();
-                            JSONArray bookmarksArray = null;
-                            
-                            if (data.has("data") && data.opt("data") instanceof JSONObject) {
-                                JSONObject dataObj = data.getJSONObject("data");
-                                if (dataObj.has("bookmarks")) {
-                                    bookmarksArray = dataObj.getJSONArray("bookmarks");
-                                }
-                            } else if (data.has("bookmarks")) {
-                                bookmarksArray = data.getJSONArray("bookmarks");
-                            } else if (data.has("results")) {
-                                bookmarksArray = data.getJSONArray("results");
+                        android.util.Log.d(TAG, "Bookmarks loaded from API");
+                        
+                        // Parse bookmarked IDs using utility
+                        java.util.Set<String> bookmarkedIds = JsonParsingUtils.parseBookmarkedIds(response.getData());
+                        
+                        // Update bookmark status for articles in current lists
+                        for (Article article : breakingNewsList) {
+                            if (bookmarkedIds.contains(article.getId())) {
+                                article.setBookmarked(true);
                             }
-                            
-                            if (bookmarksArray != null) {
-                                android.util.Log.d(TAG, "Found " + bookmarksArray.length() + " bookmarks");
-                                updateBookmarkStatus(bookmarksArray);
+                        }
+                        
+                        for (Article article : popularNewsList) {
+                            if (bookmarkedIds.contains(article.getId())) {
+                                article.setBookmarked(true);
                             }
-                        } catch (Exception e) {
-                            android.util.Log.e(TAG, "Error parsing bookmarks: " + e.getMessage(), e);
+                        }
+                        
+                        // Refresh adapters
+                        if (breakingNewsAdapter != null) {
+                            breakingNewsAdapter.notifyDataSetChanged();
+                        }
+                        if (newsAdapter != null) {
+                            newsAdapter.notifyDataSetChanged();
                         }
                     } else {
                         android.util.Log.e(TAG, "Failed to load bookmarks: " + response.getErrorMessage());
                     }
                 }
             });
-        }
-    }
-
-    private void updateBookmarkStatus(JSONArray bookmarksArray) {
-        try {
-            // Create a set of bookmarked article IDs
-            java.util.Set<String> bookmarkedIds = new java.util.HashSet<>();
-            for (int i = 0; i < bookmarksArray.length(); i++) {
-                JSONObject bookmark = bookmarksArray.getJSONObject(i);
-                String articleId = bookmark.optString("article_id", "");
-                if (!articleId.isEmpty()) {
-                    bookmarkedIds.add(articleId);
-                }
-            }
-            
-            // Update bookmark status for articles in current lists
-            for (Article article : breakingNewsList) {
-                if (bookmarkedIds.contains(article.getId())) {
-                    article.setBookmarked(true);
-                }
-            }
-            
-            for (Article article : popularNewsList) {
-                if (bookmarkedIds.contains(article.getId())) {
-                    article.setBookmarked(true);
-                }
-            }
-            
-            // Refresh adapters
-            if (breakingNewsAdapter != null) {
-                breakingNewsAdapter.notifyDataSetChanged();
-            }
-            if (newsAdapter != null) {
-                newsAdapter.notifyDataSetChanged();
-            }
-            
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "Error updating bookmark status: " + e.getMessage(), e);
         }
     }
 
