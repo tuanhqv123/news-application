@@ -96,6 +96,37 @@ public class DateUtils {
     }
 
     /**
+     * Format ISO date string to full format (e.g., "Dec 2, 2025")
+     * @param isoDate ISO date string
+     * @return Full formatted date string
+     */
+    public static String formatToFullDate(String isoDate) {
+        if (isoDate == null || isoDate.isEmpty()) {
+            return "";
+        }
+        
+        try {
+            SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+            isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            
+            // Remove milliseconds and timezone
+            String dateStr = isoDate.split("\\.")[0];
+            if (dateStr.contains("+")) {
+                dateStr = dateStr.substring(0, dateStr.indexOf("+"));
+            }
+            
+            Date date = isoFormat.parse(dateStr);
+            if (date == null) return "";
+            
+            SimpleDateFormat outputFormat = new SimpleDateFormat("MMM d, yyyy", Locale.US);
+            return outputFormat.format(date);
+            
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
      * Get relative time string (e.g., "2 hours ago", "Yesterday")
      * @param isoDate ISO date string
      * @return Relative time string

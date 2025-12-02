@@ -6,27 +6,31 @@
     android:layout_height="match_parent"
     android:background="@color/white"
     android:orientation="vertical"
+    android:fitsSystemWindows="true"
     tools:context=".ArticleDetailActivity">
 
     <!-- Sticky Top Bar -->
     <RelativeLayout
         android:id="@+id/stickyTopBar"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="56dp"
         android:background="@color/white"
         android:elevation="4dp"
         android:paddingStart="16dp"
-        android:paddingEnd="16dp">
+        android:paddingEnd="16dp"
+        android:gravity="center_vertical">
 
         <ImageView
             android:id="@+id/backImageView"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="2dp" />
+            android:padding="6dp"
+            android:clickable="true"
+            android:focusable="true" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -37,32 +41,38 @@
 
             <ImageView
                 android:id="@+id/shareImageView"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:src="@drawable/ic_share"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="2dp"
-                android:layout_marginEnd="16dp" />
+                android:padding="6dp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
 
             <TextView
                 android:id="@+id/fontSizeIcon"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:gravity="center"
                 android:text="Aa"
                 android:textColor="@color/black"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:layout_marginEnd="16dp" />
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
 
             <ImageView
                 android:id="@+id/bookmarkImageView"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:src="@drawable/ic_bookmark_outline"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="2dp" />
+                android:padding="6dp"
+                android:clickable="true"
+                android:focusable="true" />
 
         </LinearLayout>
 
@@ -152,21 +162,52 @@
                 app:layout_constraintTop_toTopOf="@id/sourceTextView"
                 tools:text="April 21" />
 
-            <!-- Content -->
+            <!-- Summary -->
+            <TextView
+                android:id="@+id/summaryTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:fontFamily="sans-serif"
+                android:lineSpacingExtra="4dp"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:textStyle="italic"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/sourceTextView"
+                tools:text="Article summary goes here..." />
+
+            <!-- Content (HTML WebView) -->
+            <android.webkit.WebView
+                android:id="@+id/contentWebView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/summaryTextView" />
+
+            <!-- Content TextView (fallback for non-HTML) -->
             <TextView
                 android:id="@+id/contentTextView"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginEnd="16dp"
                 android:fontFamily="sans-serif"
                 android:lineSpacingExtra="4dp"
                 android:textColor="@color/black"
                 android:textSize="14sp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/sourceTextView"
+                app:layout_constraintTop_toBottomOf="@id/summaryTextView"
                 tools:text="Sample article content that demonstrates proper text display and scrolling functionality." />
 
             <!-- Divider -->
@@ -180,7 +221,7 @@
                 android:background="#E0E0E0"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/contentTextView" />
+                app:layout_constraintTop_toBottomOf="@id/contentWebView" />
 
             <!-- Comments Section Header -->
             <TextView

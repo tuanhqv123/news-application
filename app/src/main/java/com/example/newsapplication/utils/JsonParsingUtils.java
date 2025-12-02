@@ -82,14 +82,27 @@ public class JsonParsingUtils {
                 }
             }
             
+            // Get channel name from nested channels object
+            String channelName = "";
+            if (articleJson.has("channels") && !articleJson.isNull("channels")) {
+                JSONObject channelObj = articleJson.optJSONObject("channels");
+                if (channelObj != null) {
+                    channelName = channelObj.optString("name", "");
+                }
+            }
+            
             String author = articleJson.optString("author", "Unknown Author");
             String imageUrl = articleJson.optString("hero_image_url", "");
             String createdAt = articleJson.optString("created_at", "");
+            String publishedAt = articleJson.optString("published_at", createdAt);
             
             // Use placeholder image if no URL
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
             
-            return new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
+            Article article = new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
+            article.setChannelName(channelName);
+            article.setPublishedAt(publishedAt);
+            return article;
         } catch (Exception e) {
             Log.e(TAG, "Error parsing single article", e);
             return null;

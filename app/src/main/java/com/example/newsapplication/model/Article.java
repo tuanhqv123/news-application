@@ -11,6 +11,8 @@ public class Article implements Serializable {
     private String author;
     private String source;
     private String category;
+    private String channelName;
+    private String publishedAt;
     private String imageUrl;
     private int imageResId;
     private String date;
@@ -76,4 +78,10 @@ public class Article implements Serializable {
 
     public boolean isVideo() { return isVideo; }
     public void setVideo(boolean video) { isVideo = video; }
+
+    public String getChannelName() { return channelName; }
+    public void setChannelName(String channelName) { this.channelName = channelName; }
+
+    public String getPublishedAt() { return publishedAt; }
+    public void setPublishedAt(String publishedAt) { this.publishedAt = publishedAt; }
 }

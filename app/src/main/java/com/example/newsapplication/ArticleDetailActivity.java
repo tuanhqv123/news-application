@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -20,6 +22,7 @@ import com.example.newsapplication.model.Article;
 import com.example.newsapplication.model.Comment;
 import com.example.newsapplication.ui.FontSizeDialog;
 import com.example.newsapplication.utils.FontSizeManager;
+import com.example.newsapplication.utils.DateUtils;
 import com.example.newsapplication.repository.NewsRepository;
 import com.example.newsapplication.auth.UserSessionManager;
 import org.json.JSONArray;
@@ -40,7 +43,9 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private TextView sourceTextView;
     private TextView dateTextView;
     private TextView categoryTextView;
+    private TextView summaryTextView;
     private TextView contentTextView;
+    private WebView contentWebView;
 
     // Font size controls
     private TextView fontSizeIcon;
@@ -91,7 +96,12 @@ public class ArticleDetailActivity extends AppCompatActivity {
         sourceTextView = findViewById(R.id.sourceTextView);
         dateTextView = findViewById(R.id.dateTextView);
         categoryTextView = findViewById(R.id.categoryTextView);
+        summaryTextView = findViewById(R.id.summaryTextView);
         contentTextView = findViewById(R.id.contentTextView);
+        contentWebView = findViewById(R.id.contentWebView);
+        
+        // Setup WebView
+        setupWebView();
         
         // Comments views
         commentsHeaderTextView = findViewById(R.id.commentsHeaderTextView);
@@ -101,6 +111,16 @@ public class ArticleDetailActivity extends AppCompatActivity {
         commentsRecyclerView = findViewById(R.id.commentsRecyclerView);
         commentEditText = findViewById(R.id.commentEditText);
         sendCommentButton = findViewById(R.id.sendCommentButton);
+    }
+    
+    private void setupWebView() {
+        if (contentWebView != null) {
+            WebSettings webSettings = contentWebView.getSettings();
+            webSettings.setJavaScriptEnabled(false);
+            webSettings.setLoadWithOverviewMode(true);
+            webSettings.setUseWideViewPort(true);
+            contentWebView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        }
     }
 
     private void setupCommentsRecyclerView() {
@@ -118,12 +138,56 @@ public class ArticleDetailActivity extends AppCompatActivity {
             if (currentArticle != null) {
                 titleTextView.setText(currentArticle.getTitle());
                 
-                // Show only date, hide category
+                // Show channel name and formatted date
                 categoryTextView.setVisibility(View.GONE);
-                sourceTextView.setText(currentArticle.getDate());
+                
+                // Build source text: "Channel Name • Formatted Date"
+                StringBuilder sourceBuilder = new StringBuilder();
+                String channelName = currentArticle.getChannelName();
+                if (channelName != null && !channelName.isEmpty()) {
+                    sourceBuilder.append(channelName);
+                }
+                
+                // Format and add published date using DateUtils
+                String publishedAt = currentArticle.getPublishedAt();
+                if (publishedAt == null || publishedAt.isEmpty()) {
+                    publishedAt = currentArticle.getDate();
+                }
+                String formattedDate = DateUtils.formatToFullDate(publishedAt);
+                if (!formattedDate.isEmpty()) {
+                    if (sourceBuilder.length() > 0) {
+                        sourceBuilder.append(" • ");
+                    }
+                    sourceBuilder.append(formattedDate);
+                }
+                
+                sourceTextView.setText(sourceBuilder.toString());
                 dateTextView.setVisibility(View.GONE);
                 
-                contentTextView.setText(currentArticle.getContent());
+                // Show summary
+                String summary = currentArticle.getDescription();
+                if (summary != null && !summary.isEmpty()) {
+                    summaryTextView.setText(summary);
+                    summaryTextView.setVisibility(View.VISIBLE);
+                } else {
+                    summaryTextView.setVisibility(View.GONE);
+                }
+                
+                // Display content - check if it's HTML
+                String content = currentArticle.getContent();
+                if (content != null && !content.isEmpty()) {
+                    if (isHtmlContent(content)) {
+                        // Use WebView for HTML content
+                        contentWebView.setVisibility(View.VISIBLE);
+                        contentTextView.setVisibility(View.GONE);
+                        loadHtmlContent(content);
+                    } else {
+                        // Use TextView for plain text
+                        contentWebView.setVisibility(View.GONE);
+                        contentTextView.setVisibility(View.VISIBLE);
+                        contentTextView.setText(content);
+                    }
+                }
 
                 // Load article image from URL using Picasso
                 try {
@@ -148,7 +212,31 @@ public class ArticleDetailActivity extends AppCompatActivity {
             }
         }
     }
-
+    
+    private boolean isHtmlContent(String content) {
+        return content != null && (content.contains("<") && content.contains(">"));
+    }
+    
+    private void loadHtmlContent(String htmlContent) {
+        // Wrap HTML content with proper styling
+        String styledHtml = "<!DOCTYPE html><html><head>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                "<style>" +
+                "body { font-family: sans-serif; font-size: 16px; line-height: 1.6; color: #333; margin: 0; padding: 0; }" +
+                "img { max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; }" +
+                "p { margin: 12px 0; }" +
+                "a { color: #0866FF; text-decoration: none; }" +
+                ".Normal { margin: 12px 0; }" +
+                "video, iframe { max-width: 100%; }" +
+                ".box_embed_video_parent { margin: 16px 0; }" +
+                ".box_img_video img { width: 100%; border-radius: 8px; }" +
+                "</style></head><body>" +
+                htmlContent +
+                "</body></html>";
+        
+        contentWebView.loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null);
+    }
+    
     private void setupClickListeners() {
         backImageView.setOnClickListener(v -> finish());
 
