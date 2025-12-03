@@ -49,7 +49,7 @@ public class ChannelEndpoints {
             if (rssUrl != null) requestBody.put("rss_url", rssUrl);
             if (logoUrl != null) requestBody.put("logo_url", logoUrl);
         } catch (JSONException e) {
-            callback.onError(ApiResponse.error("Invalid request data", 0));
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
             return;
         }
         apiClient.post(ApiConfig.API_VERSION + "/channels/admin/create", requestBody, callback);

@@ -329,7 +329,7 @@ public class DashboardFragment extends Fragment {
                         updateFollowButton(false);
                         Toast.makeText(getContext(), "Unfollowed " + selectedChannel.getName(), Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(getContext(), "Failed to unfollow", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -344,7 +344,7 @@ public class DashboardFragment extends Fragment {
                         updateFollowButton(true);
                         Toast.makeText(getContext(), "Following " + selectedChannel.getName(), Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(getContext(), "Failed to follow", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -698,7 +698,7 @@ public class DashboardFragment extends Fragment {
                     if (!response.isSuccess() && response.getStatusCode() != 400) {
                         article.setBookmarked(false);
                         adapter.notifyItemChanged(position);
-                        Toast.makeText(getContext(), "Failed to bookmark", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -709,7 +709,7 @@ public class DashboardFragment extends Fragment {
                     if (!response.isSuccess()) {
                         article.setBookmarked(true);
                         adapter.notifyItemChanged(position);
-                        Toast.makeText(getContext(), "Failed to remove bookmark", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             });

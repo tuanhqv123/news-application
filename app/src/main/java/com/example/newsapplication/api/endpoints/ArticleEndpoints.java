@@ -56,7 +56,7 @@ public class ArticleEndpoints {
         try {
             requestBody.put("content", content);
         } catch (JSONException e) {
-            callback.onError(ApiResponse.error("Invalid request data", 0));
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
             return;
         }
         apiClient.post(endpoint, requestBody, callback);
@@ -92,7 +92,7 @@ public class ArticleEndpoints {
             if (heroImageUrl != null) requestBody.put("hero_image_url", heroImageUrl);
             if (language != null) requestBody.put("language", language);
         } catch (JSONException e) {
-            callback.onError(ApiResponse.error("Invalid request data", 0));
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
             return;
         }
         apiClient.post(endpoint, requestBody, callback);

@@ -144,7 +144,7 @@ public class EditProfileDialog extends AppCompatDialog {
                 activity.startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
             } catch (Exception e) {
                 e.printStackTrace();
-                Toast.makeText(getContext(), "No image picker available", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -177,7 +177,7 @@ public class EditProfileDialog extends AppCompatDialog {
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Toast.makeText(getContext(), "Failed to load image", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -227,7 +227,7 @@ public class EditProfileDialog extends AppCompatDialog {
                 @Override
                 public void onError(String errorMessage) {
                     saveButton.setEnabled(true);
-                    Toast.makeText(getContext(), "Failed to upload image: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
         } else {
@@ -252,7 +252,7 @@ public class EditProfileDialog extends AppCompatDialog {
                         Toast.makeText(getContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
                         dismiss();
                     } else {
-                        Toast.makeText(getContext(), "Failed to update profile: " + response.getErrorMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_LONG).show();
                     }
                 }
             });

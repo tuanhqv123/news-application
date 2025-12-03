@@ -46,7 +46,6 @@ public class MediaEndpoints {
         try {
             InputStream inputStream = context.getContentResolver().openInputStream(fileUri);
             if (inputStream == null) {
-                callback.onError("Cannot read file");
                 return;
             }
 
@@ -74,15 +73,13 @@ public class MediaEndpoints {
                                 if (data != null && data.has("url")) {
                                     String fileUrl = data.getString("url");
                                     callback.onSuccess(fileUrl);
-                                } else {
-                                    callback.onError("Invalid response format");
                                 }
                             } else {
-                                String message = jsonResponse.optString("message", "Upload failed");
-                                callback.onError(message);
+                                String detail = jsonResponse.optString("detail", "");
+                                callback.onError(detail);
                             }
                         } catch (Exception e) {
-                            callback.onError("Error parsing response: " + e.getMessage());
+                            callback.onError(e.getMessage());
                         }
                     },
                     error -> {
@@ -98,13 +95,19 @@ public class MediaEndpoints {
 
                                 @Override
                                 public void onError(String errorMessage) {
-                                    callback.onError("Session expired. Please login again.");
+                                    callback.onError(errorMessage);
                                 }
                             });
                         } else {
-                            String errorMsg = "Upload failed";
-                            if (statusCode > 0) {
-                                errorMsg += " (Status: " + statusCode + ")";
+                            // Extract detail from error response
+                            String errorMsg = "";
+                            if (error.networkResponse != null && error.networkResponse.data != null) {
+                                try {
+                                    JSONObject errorData = new JSONObject(new String(error.networkResponse.data));
+                                    errorMsg = errorData.optString("detail", "");
+                                } catch (Exception e) {
+                                    // Failed to parse error
+                                }
                             }
                             callback.onError(errorMsg);
                         }
@@ -114,7 +117,7 @@ public class MediaEndpoints {
             requestQueue.add(multipartRequest);
 
         } catch (Exception e) {
-            callback.onError("Error preparing upload: " + e.getMessage());
+            callback.onError(e.getMessage());
         }
     }
     private static class MultipartRequest extends Request<NetworkResponse> {
