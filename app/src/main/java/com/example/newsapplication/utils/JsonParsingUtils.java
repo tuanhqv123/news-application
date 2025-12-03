@@ -2,6 +2,7 @@ package com.example.newsapplication.utils;
 
 import com.example.newsapplication.R;
 import com.example.newsapplication.model.Article;
+import com.example.newsapplication.model.Category;
 import com.example.newsapplication.model.Channel;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -174,6 +175,54 @@ public class JsonParsingUtils {
             
             if (response.has("channels")) {
                 return response.getJSONArray("channels");
+            }
+            
+            if (response.has("results")) {
+                return response.getJSONArray("results");
+            }
+            
+            if (response.has("data") && response.opt("data") instanceof JSONArray) {
+                return response.getJSONArray("data");
+            }
+        } catch (Exception e) {
+        }
+        
+        return null;
+    }
+
+    // Parse categories from API response
+    public static List<Category> parseCategories(JSONObject response) {
+        List<Category> categories = new ArrayList<>();
+        
+        try {
+            JSONArray categoriesArray = extractCategoriesArray(response);
+            
+            if (categoriesArray != null) {
+                for (int i = 0; i < categoriesArray.length(); i++) {
+                    Category category = Category.fromJson(categoriesArray.getJSONObject(i));
+                    if (category != null) {
+                        categories.add(category);
+                    }
+                }
+            }
+        } catch (Exception e) {
+        }
+        
+        return categories;
+    }
+
+    // Extract categories array from various response formats
+    private static JSONArray extractCategoriesArray(JSONObject response) {
+        try {
+            if (response.has("data") && response.opt("data") instanceof JSONObject) {
+                JSONObject dataObj = response.getJSONObject("data");
+                if (dataObj.has("categories")) {
+                    return dataObj.getJSONArray("categories");
+                }
+            }
+            
+            if (response.has("categories")) {
+                return response.getJSONArray("categories");
             }
             
             if (response.has("results")) {

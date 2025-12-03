@@ -89,7 +89,9 @@ public class ArticleEndpoints {
             requestBody.put("category_id", categoryId);
             if (channelId != null) requestBody.put("channel_id", channelId);
             if (sourceUrl != null) requestBody.put("source_url", sourceUrl);
-            if (heroImageUrl != null) requestBody.put("hero_image_url", heroImageUrl);
+            if (heroImageUrl != null && !heroImageUrl.isEmpty()) {
+                requestBody.put("hero_image_url", heroImageUrl);
+            }
             if (language != null) requestBody.put("language", language);
         } catch (JSONException e) {
             callback.onError(ApiResponse.error(e.getMessage(), 0));
@@ -101,6 +103,11 @@ public class ArticleEndpoints {
     public void publishArticle(String articleId, ApiClient.ApiCallback<JSONObject> callback) {
         String endpoint = ApiConfig.API_VERSION + "/articles/" + articleId + "/publish";
         apiClient.put(endpoint, null, callback);
+    }
+
+    public void getMyArticles(int page, int limit, ApiClient.ApiCallback<JSONObject> callback) {
+        String endpoint = ApiConfig.API_VERSION + "/articles/my-articles?page=" + page + "&limit=" + limit;
+        apiClient.get(endpoint, callback);
     }
 
     public void updateArticleStatus(String articleId, String status, ApiClient.ApiCallback<JSONObject> callback) {

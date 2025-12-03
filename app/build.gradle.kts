@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.volley)
     implementation(libs.gson)
     implementation("com.squareup.picasso:picasso:2.8")
+    implementation("jp.wasabeef:richeditor-android:2.0.0")
 
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-analytics")
