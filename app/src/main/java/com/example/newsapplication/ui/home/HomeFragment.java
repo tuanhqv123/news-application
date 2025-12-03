@@ -137,7 +137,7 @@ public class HomeFragment extends Fragment {
                     
                     Toast.makeText(getContext(), "Unfollowed " + channel.getName(), Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getContext(), "Failed to unfollow channel", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -153,7 +153,7 @@ public class HomeFragment extends Fragment {
                     popularNewsList.addAll(articles);
                     newsAdapter.notifyDataSetChanged();
                 } else {
-                    Toast.makeText(getContext(), "Failed to load channel articles", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -184,7 +184,7 @@ public class HomeFragment extends Fragment {
                             } else {
                                 article.setBookmarked(false);
                                 adapter.notifyItemChanged(position);
-                                Toast.makeText(getContext(), "Failed to bookmark article", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                             }
                         } else {
                             Toast.makeText(getContext(), "Article bookmarked", Toast.LENGTH_SHORT).show();
@@ -198,7 +198,7 @@ public class HomeFragment extends Fragment {
                         if (!response.isSuccess()) {
                             article.setBookmarked(true);
                             adapter.notifyItemChanged(position);
-                            Toast.makeText(getContext(), "Failed to remove bookmark", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(getContext(), "Bookmark removed", Toast.LENGTH_SHORT).show();
                         }

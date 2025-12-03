@@ -71,7 +71,10 @@ public class ApiClient {
             error -> {
                 int statusCode = NetworkUtils.getStatusCode(error);
                 
-                if (statusCode == 401 && !isRetry) {
+                // Don't try to refresh token on login/register endpoints or if already retried
+                boolean isAuthEndpoint = endpoint.contains("/auth/login") || endpoint.contains("/auth/register");
+                
+                if (statusCode == 401 && !isRetry && !isAuthEndpoint && authToken != null) {
                     handleTokenRefresh(method, endpoint, body, callback);
                 } else {
                     callback.onError(createErrorResponse(error));
@@ -132,9 +135,24 @@ public class ApiClient {
     }
 
     private ApiResponse<JSONObject> createErrorResponse(VolleyError error) {
-        String message = NetworkUtils.getErrorMessage(context, error);
         int statusCode = NetworkUtils.getStatusCode(error);
-        return ApiResponse.error(message, statusCode);
+        JSONObject errorData = null;
+        String message = "An error occurred";
+        
+        // Parse error response body to extract detail field
+        if (error.networkResponse != null && error.networkResponse.data != null) {
+            try {
+                errorData = new JSONObject(new String(error.networkResponse.data));
+                // Extract detail field from response body
+                if (errorData.has("detail")) {
+                    message = errorData.getString("detail");
+                }
+            } catch (Exception e) {
+                // Failed to parse error body
+            }
+        }
+        
+        return ApiResponse.error(message, statusCode, errorData);
     }
 
     private void loadAuthToken() {

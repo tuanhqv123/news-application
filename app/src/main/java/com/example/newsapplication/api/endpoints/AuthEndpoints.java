@@ -43,7 +43,7 @@ public class AuthEndpoints {
                 requestBody.put("avatar_url", avatarUrl);
             }
         } catch (JSONException e) {
-            callback.onError(ApiResponse.error("Invalid request data", 0));
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
             return;
         }
         apiClient.put(ApiConfig.API_VERSION + "/auth/me", requestBody, callback);
@@ -59,7 +59,7 @@ public class AuthEndpoints {
                 requestBody.put("channel_id", channelId);
             }
         } catch (JSONException e) {
-            callback.onError(ApiResponse.error("Invalid request data", 0));
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
             return;
         }
         apiClient.post(ApiConfig.API_VERSION + "/auth/admin/invite-user", requestBody, callback);

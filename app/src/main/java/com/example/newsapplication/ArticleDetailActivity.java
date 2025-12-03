@@ -272,7 +272,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                                 } else {
                                     currentArticle.setBookmarked(false);
                                     updateBookmarkIcon();
-                                    Toast.makeText(ArticleDetailActivity.this, "Failed to bookmark article", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(ArticleDetailActivity.this, response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                                 }
                             }
                         }
@@ -288,7 +288,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                             } else {
                                 currentArticle.setBookmarked(true);
                                 updateBookmarkIcon();
-                                Toast.makeText(ArticleDetailActivity.this, "Failed to remove bookmark", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ArticleDetailActivity.this, response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -440,7 +440,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
         
         String articleId = currentArticle.getId();
         if (articleId == null || articleId.isEmpty()) {
-            Toast.makeText(this, "Unable to post comment", Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -481,7 +480,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                         loadComments();
                     }
                 } else {
-                    Toast.makeText(ArticleDetailActivity.this, "Failed to post comment", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ArticleDetailActivity.this, response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         });

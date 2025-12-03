@@ -125,7 +125,7 @@ public class SavedFragment extends Fragment {
                             
                             Toast.makeText(getContext(), "Article removed from saved", Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(getContext(), "Failed to remove bookmark", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), response.getErrorMessage(), Toast.LENGTH_SHORT).show();
                         }
                     }
                 });

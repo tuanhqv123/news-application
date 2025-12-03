@@ -154,7 +154,7 @@ public class NewsRepository {
                 requestBody.put("avatar_url", avatarUrl);
             }
         } catch (JSONException e) {
-            callback.onResult(ApiResponse.error("Invalid request data", 0));
+            callback.onResult(ApiResponse.error(e.getMessage(), 0));
             return;
         }
         userEndpoints.updateAuthProfile(requestBody, wrapCallback(callback));

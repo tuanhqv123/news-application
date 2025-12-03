@@ -74,33 +74,13 @@ public class AuthService {
                         callback.onSuccess(data);
                     }
                 } catch (JSONException e) {
-                    callback.onError("Failed to parse login response: " + e.getMessage());
+                    callback.onError(e.getMessage());
                 }
             }
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                String errorMessage = error.getErrorMessage();
-                
-                if (error.getData() != null) {
-                    if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    } else {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    }
-                }
-                
-                callback.onError(errorMessage);
+                callback.onError(error.getErrorMessage());
             }
         });
     }
@@ -114,27 +94,7 @@ public class AuthService {
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                String errorMessage = error.getErrorMessage();
-                
-                if (error.getData() != null) {
-                    if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    } else {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    }
-                }
-                
-                callback.onError(errorMessage);
+                callback.onError(error.getErrorMessage());
             }
         });
     }
@@ -185,33 +145,13 @@ public class AuthService {
                     }
                     callback.onSuccess(userData);
                 } catch (Exception e) {
-                    callback.onError("Failed to parse user data");
+                    callback.onError(e.getMessage());
                 }
             }
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                String errorMessage = error.getErrorMessage();
-                
-                if (error.getData() != null) {
-                    if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    } else {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    }
-                }
-                
-                callback.onError(errorMessage);
+                callback.onError(error.getErrorMessage());
             }
         });
     }
@@ -225,7 +165,7 @@ public class AuthService {
     public void refreshToken(AuthResultCallback callback) {
         String refreshToken = sessionManager.getRefreshToken();
         if (refreshToken == null) {
-            callback.onError("No refresh token available");
+            callback.onError("No refresh token");
             return;
         }
 
@@ -246,10 +186,10 @@ public class AuthService {
 
                         callback.onSuccess(responseData);
                     } else {
-                        callback.onError("Invalid refresh response");
+                        callback.onError(data != null ? data.toString() : "");
                     }
                 } catch (Exception e) {
-                    callback.onError("Error parsing refresh response: " + e.getMessage());
+                    callback.onError(e.getMessage());
                 }
             }
 
@@ -257,14 +197,14 @@ public class AuthService {
             public void onError(ApiResponse<JSONObject> error) {
                 sessionManager.logoutUser();
                 apiClient.clearAuthToken();
-                callback.onError("Session expired. Please login again.");
+                callback.onError(error.getErrorMessage());
             }
         });
     }
     
     public void validateToken(AuthResultCallback callback) {
         if (!sessionManager.isLoggedIn() || sessionManager.getAuthToken() == null) {
-            callback.onError("Not logged in");
+            // Don't validate if not logged in
             return;
         }
         
@@ -292,27 +232,7 @@ public class AuthService {
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                String errorMessage = error.getErrorMessage();
-                
-                if (error.getData() != null) {
-                    if (error.getData().has("success") && !error.getData().optBoolean("success", true)) {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    } else {
-                        if (error.getData().has("detail")) {
-                            try {
-                                errorMessage = error.getData().getString("detail");
-                            } catch (JSONException e) {
-                            }
-                        }
-                    }
-                }
-                
-                callback.onError(errorMessage);
+                callback.onError(error.getErrorMessage());
             }
         });
     }

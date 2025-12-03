@@ -21,6 +21,10 @@ public class ApiResponse<T> {
         return new ApiResponse<>(false, null, message, statusCode);
     }
 
+    public static <T> ApiResponse<T> error(String message, int statusCode, T data) {
+        return new ApiResponse<>(false, data, message, statusCode);
+    }
+
     public boolean isSuccess() { return success; }
     public T getData() { return data; }
     public String getErrorMessage() { return errorMessage; }
