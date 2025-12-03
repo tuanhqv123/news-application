@@ -9,7 +9,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.newsapplication.adapter.NewsAdapter;
+import com.example.newsapplication.adapter.MyArticlesAdapter;
 import com.example.newsapplication.api.ApiResponse;
 import com.example.newsapplication.model.Article;
 import com.example.newsapplication.repository.NewsRepository;
@@ -21,7 +21,7 @@ import java.util.List;
 public class MyArticlesActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
-    private NewsAdapter adapter;
+    private MyArticlesAdapter adapter;
     private ProgressBar progressBar;
     private TextView emptyStateText;
     private NewsRepository newsRepository;
@@ -48,19 +48,11 @@ public class MyArticlesActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        adapter = new NewsAdapter(articles, new NewsAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(Article article) {
-                if (article != null) {
-                    Intent intent = new Intent(MyArticlesActivity.this, ArticleDetailActivity.class);
-                    intent.putExtra("article", article);
-                    startActivity(intent);
-                }
-            }
-
-            @Override
-            public void onBookmarkClick(Article article, int position) {
-                // Not needed for my articles
+        adapter = new MyArticlesAdapter(articles, article -> {
+            if (article != null) {
+                Intent intent = new Intent(MyArticlesActivity.this, ArticleDetailActivity.class);
+                intent.putExtra("article", article);
+                startActivity(intent);
             }
         });
 

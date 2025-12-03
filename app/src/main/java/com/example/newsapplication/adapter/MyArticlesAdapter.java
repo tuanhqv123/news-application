@@ -14,30 +14,29 @@ import com.example.newsapplication.model.Article;
 import com.example.newsapplication.utils.DateUtils;
 import java.util.List;
 
-public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder> {
+public class MyArticlesAdapter extends RecyclerView.Adapter<MyArticlesAdapter.MyArticleViewHolder> {
     private List<Article> articles;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
         void onItemClick(Article article);
-        void onBookmarkClick(Article article, int position);
     }
 
-    public NewsAdapter(List<Article> articles, OnItemClickListener listener) {
+    public MyArticlesAdapter(List<Article> articles, OnItemClickListener listener) {
         this.articles = articles;
         this.listener = listener;
     }
 
     @NonNull
     @Override
-    public NewsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public MyArticleViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_news_feed, parent, false);
-        return new NewsViewHolder(view);
+        return new MyArticleViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull NewsViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull MyArticleViewHolder holder, int position) {
         if (position < 0 || position >= articles.size()) {
             return;
         }
@@ -56,7 +55,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             holder.categoryTextView.setText(article.getCategory());
         }
         
-        // Set date only (no category, no dot separator)
+        // Set date
         if (holder.categoryDateTextView != null) {
             String dateStr = article.getDate();
             String formattedDate = "";
@@ -68,14 +67,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             }
             
             holder.categoryDateTextView.setText(formattedDate);
-        }
-        
-        // Hide source and date (using combined field instead)
-        if (holder.sourceTextView != null) {
-            holder.sourceTextView.setVisibility(View.GONE);
-        }
-        if (holder.dateTextView != null) {
-            holder.dateTextView.setVisibility(View.GONE);
         }
         
         // Set summary if available
@@ -92,7 +83,6 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         // Load image from URL using Picasso
         if (holder.imageView != null) {
             if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
-                // Load image without placeholder to avoid blue/green indicator
                 com.squareup.picasso.Picasso.get()
                     .load(article.getImageUrl())
                     .noPlaceholder()
@@ -102,6 +92,42 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
                     .into(holder.imageView);
             } else {
                 holder.imageView.setImageResource(R.drawable.placeholder_image);
+            }
+        }
+
+        // Handle status badge - ONLY SHOW IN MY ARTICLES
+        if (holder.statusBadge != null) {
+            String status = article.getStatus();
+            if (status != null && !status.isEmpty()) {
+                holder.statusBadge.setVisibility(View.VISIBLE);
+                
+                switch (status.toLowerCase()) {
+                    case "draft":
+                        holder.statusBadge.setText("DRAFT");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_draft);
+                        holder.statusBadge.setTextColor(0xFF616161);
+                        break;
+                    case "pending_review":
+                        holder.statusBadge.setText("PENDING");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_pending_review);
+                        holder.statusBadge.setTextColor(0xFFE65100);
+                        break;
+                    case "published":
+                        holder.statusBadge.setText("PUBLISHED");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_published);
+                        holder.statusBadge.setTextColor(0xFF2E7D32);
+                        break;
+                    case "rejected":
+                        holder.statusBadge.setText("REJECTED");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_rejected);
+                        holder.statusBadge.setTextColor(0xFFC62828);
+                        break;
+                    default:
+                        holder.statusBadge.setVisibility(View.GONE);
+                        break;
+                }
+            } else {
+                holder.statusBadge.setVisibility(View.GONE);
             }
         }
 
@@ -123,24 +149,22 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         notifyDataSetChanged();
     }
 
-    public static class NewsViewHolder extends RecyclerView.ViewHolder {
+    public static class MyArticleViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         TextView titleTextView;
-        TextView sourceTextView;
-        TextView dateTextView;
         TextView categoryTextView;
         TextView summaryTextView;
         TextView categoryDateTextView;
+        TextView statusBadge;
 
-        public NewsViewHolder(@NonNull View itemView) {
+        public MyArticleViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageView);
             titleTextView = itemView.findViewById(R.id.titleTextView);
-            sourceTextView = itemView.findViewById(R.id.sourceTextView);
-            dateTextView = itemView.findViewById(R.id.dateTextView);
             categoryTextView = itemView.findViewById(R.id.categoryTextView);
             summaryTextView = itemView.findViewById(R.id.summaryTextView);
             categoryDateTextView = itemView.findViewById(R.id.categoryDateTextView);
+            statusBadge = itemView.findViewById(R.id.statusBadge);
         }
     }
 }
