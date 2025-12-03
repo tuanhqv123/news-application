@@ -1,7 +1,10 @@
 package com.example.newsapplication;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -10,6 +13,7 @@ import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +34,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ArticleDetailActivity extends AppCompatActivity {
 
@@ -37,6 +42,13 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private ImageView articleImageView;
     private ImageView bookmarkImageView;
     private ImageView shareImageView;
+    private ImageView audioPlayImageView;
+    private View audioControlBar;
+    private ImageView audioControlPlayPause;
+    private TextView audioStatusTextView;
+    private TextView audioCurrentTimeTextView;
+    private TextView audioDurationTextView;
+    private SeekBar audioProgressSeekBar;
     private TextView titleTextView;
     private TextView sourceTextView;
     private TextView dateTextView;
@@ -63,6 +75,13 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private FontSizeManager fontSizeManager;
     private NewsRepository newsRepository;
     private UserSessionManager sessionManager;
+    
+    // Audio player
+    private MediaPlayer mediaPlayer;
+    private boolean isPlaying = false;
+    private static final String AUDIO_BASE_URL = "https://byvkcpdtprodvhadpdix.supabase.co/storage/v1/object/public/audio_articles/";
+    private Handler progressHandler;
+    private Runnable progressRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +94,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         // Initialize repository and session manager
         newsRepository = new NewsRepository(this);
         sessionManager = new UserSessionManager(this);
+        progressHandler = new Handler(Looper.getMainLooper());
 
         initViews();
         setupCommentsRecyclerView();
@@ -89,6 +109,13 @@ public class ArticleDetailActivity extends AppCompatActivity {
         articleImageView = findViewById(R.id.articleImageView);
         bookmarkImageView = findViewById(R.id.bookmarkImageView);
         shareImageView = findViewById(R.id.shareImageView);
+        audioPlayImageView = findViewById(R.id.audioPlayImageView);
+        audioControlBar = findViewById(R.id.audioControlBar);
+        audioControlPlayPause = findViewById(R.id.audioControlPlayPause);
+        audioStatusTextView = findViewById(R.id.audioStatusTextView);
+        audioCurrentTimeTextView = findViewById(R.id.audioCurrentTimeTextView);
+        audioDurationTextView = findViewById(R.id.audioDurationTextView);
+        audioProgressSeekBar = findViewById(R.id.audioProgressSeekBar);
         fontSizeIcon = findViewById(R.id.fontSizeIcon);
         titleTextView = findViewById(R.id.titleTextView);
         sourceTextView = findViewById(R.id.sourceTextView);
@@ -207,7 +234,198 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
                 // Update bookmark icon
                 updateBookmarkIcon();
+                
+                // Setup audio player if article has ID
+                setupAudioPlayer();
             }
+        }
+    }
+    
+    private void setupAudioPlayer() {
+        if (currentArticle == null || currentArticle.getId() == null || currentArticle.getId().isEmpty()) {
+            audioPlayImageView.setVisibility(View.GONE);
+            audioControlBar.setVisibility(View.GONE);
+            return;
+        }
+        
+        // Chỉ hiển thị nút audio trên top bar, thanh control sẽ hiện khi user bấm play
+        audioPlayImageView.setVisibility(View.VISIBLE);
+        audioControlBar.setVisibility(View.GONE);
+        audioPlayImageView.setImageResource(R.drawable.ic_play_circle);
+        audioControlPlayPause.setImageResource(R.drawable.ic_play_circle);
+        audioStatusTextView.setText(currentArticle.getTitle() != null ? currentArticle.getTitle() : "Listen to article");
+        audioCurrentTimeTextView.setText("00:00");
+        audioDurationTextView.setText("00:00");
+        audioProgressSeekBar.setProgress(0);
+        isPlaying = false;
+        updateAudioIcons();
+        
+        // Setup click listener
+        audioPlayImageView.setOnClickListener(v -> toggleAudioPlayback());
+        audioControlPlayPause.setOnClickListener(v -> toggleAudioPlayback());
+        setupSeekBarListener();
+    }
+    
+    private void setupSeekBarListener() {
+        audioProgressSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    audioCurrentTimeTextView.setText(formatMillis(progress));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if (mediaPlayer != null) {
+                    mediaPlayer.seekTo(seekBar.getProgress());
+                }
+            }
+        });
+    }
+    
+    private void updateAudioIcons() {
+        int icon = isPlaying ? R.drawable.ic_pause_circle : R.drawable.ic_play_circle;
+        audioPlayImageView.setImageResource(icon);
+        audioControlPlayPause.setImageResource(icon);
+    }
+    
+    private void startProgressUpdates() {
+        if (progressRunnable != null) {
+            progressHandler.removeCallbacks(progressRunnable);
+        }
+        progressRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null) {
+                    int position = mediaPlayer.getCurrentPosition();
+                    audioProgressSeekBar.setProgress(position);
+                    audioCurrentTimeTextView.setText(formatMillis(position));
+                    progressHandler.postDelayed(this, 500);
+                }
+            }
+        };
+        progressHandler.post(progressRunnable);
+    }
+    
+    private void stopProgressUpdates() {
+        if (progressRunnable != null) {
+            progressHandler.removeCallbacks(progressRunnable);
+            progressRunnable = null;
+        }
+    }
+    
+    private String formatMillis(int millis) {
+        if (millis <= 0) {
+            return "00:00";
+        }
+        int totalSeconds = millis / 1000;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
+    }
+    
+    private String getAudioUrl() {
+        if (currentArticle == null || currentArticle.getId() == null) {
+            return null;
+        }
+        return AUDIO_BASE_URL + currentArticle.getId() + ".mp3";
+    }
+    
+    private void toggleAudioPlayback() {
+        if (isPlaying) {
+            pauseAudio();
+        } else {
+            playAudio();
+        }
+    }
+    
+    private void playAudio() {
+        String audioUrl = getAudioUrl();
+        if (audioUrl == null) {
+            Toast.makeText(this, "Audio not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        try {
+            if (mediaPlayer == null) {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setDataSource(audioUrl);
+                mediaPlayer.prepareAsync();
+                
+                mediaPlayer.setOnPreparedListener(mp -> {
+                    // Lần đầu play: hiện thanh control
+                    if (audioControlBar.getVisibility() != View.VISIBLE) {
+                        audioControlBar.setVisibility(View.VISIBLE);
+                    }
+                    int duration = mp.getDuration();
+                    audioProgressSeekBar.setMax(duration);
+                    audioDurationTextView.setText(formatMillis(duration));
+                    mp.start();
+                    isPlaying = true;
+                    updateAudioIcons();
+                    startProgressUpdates();
+                });
+                
+                mediaPlayer.setOnCompletionListener(mp -> {
+                    isPlaying = false;
+                    stopProgressUpdates();
+                    audioProgressSeekBar.setProgress(0);
+                    audioCurrentTimeTextView.setText("00:00");
+                    updateAudioIcons();
+                    releaseMediaPlayer();
+                });
+                
+                mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                    Toast.makeText(ArticleDetailActivity.this, "Error playing audio", Toast.LENGTH_SHORT).show();
+                    isPlaying = false;
+                    stopProgressUpdates();
+                    audioProgressSeekBar.setProgress(0);
+                    audioCurrentTimeTextView.setText("00:00");
+                    updateAudioIcons();
+                    releaseMediaPlayer();
+                    return true;
+                });
+            } else {
+                mediaPlayer.start();
+                isPlaying = true;
+                updateAudioIcons();
+                startProgressUpdates();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error loading audio", Toast.LENGTH_SHORT).show();
+            releaseMediaPlayer();
+        }
+    }
+    
+    private void pauseAudio() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+            isPlaying = false;
+            updateAudioIcons();
+            stopProgressUpdates();
+        }
+    }
+    
+    private void releaseMediaPlayer() {
+        if (mediaPlayer != null) {
+            stopProgressUpdates();
+            try {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.release();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            mediaPlayer = null;
+            isPlaying = false;
+            updateAudioIcons();
         }
     }
     
@@ -523,5 +741,21 @@ public class ArticleDetailActivity extends AppCompatActivity {
             fontSizeDialog.show();
         } catch (Exception e) {
         }
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Pause audio when activity is paused
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            pauseAudio();
+        }
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Release MediaPlayer when activity is destroyed
+        releaseMediaPlayer();
     }
 }
