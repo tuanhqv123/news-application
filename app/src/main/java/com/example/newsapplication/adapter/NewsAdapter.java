@@ -105,6 +105,42 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             }
         }
 
+        // Handle status badge
+        if (holder.statusBadge != null) {
+            String status = article.getStatus();
+            if (status != null && !status.isEmpty()) {
+                holder.statusBadge.setVisibility(View.VISIBLE);
+                
+                switch (status.toLowerCase()) {
+                    case "draft":
+                        holder.statusBadge.setText("DRAFT");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_draft);
+                        holder.statusBadge.setTextColor(0xFF616161);
+                        break;
+                    case "pending_review":
+                        holder.statusBadge.setText("PENDING");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_pending_review);
+                        holder.statusBadge.setTextColor(0xFFE65100);
+                        break;
+                    case "published":
+                        holder.statusBadge.setText("PUBLISHED");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_published);
+                        holder.statusBadge.setTextColor(0xFF2E7D32);
+                        break;
+                    case "rejected":
+                        holder.statusBadge.setText("REJECTED");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_rejected);
+                        holder.statusBadge.setTextColor(0xFFC62828);
+                        break;
+                    default:
+                        holder.statusBadge.setVisibility(View.GONE);
+                        break;
+                }
+            } else {
+                holder.statusBadge.setVisibility(View.GONE);
+            }
+        }
+
         // Handle item click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -131,6 +167,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         TextView categoryTextView;
         TextView summaryTextView;
         TextView categoryDateTextView;
+        TextView statusBadge;
 
         public NewsViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -141,6 +178,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             categoryTextView = itemView.findViewById(R.id.categoryTextView);
             summaryTextView = itemView.findViewById(R.id.summaryTextView);
             categoryDateTextView = itemView.findViewById(R.id.categoryDateTextView);
+            statusBadge = itemView.findViewById(R.id.statusBadge);
         }
     }
 }

@@ -18,6 +18,7 @@ public class Article implements Serializable {
     private String date;
     private boolean isBookmarked;
     private boolean isVideo;
+    private String status;
 
     public Article() {}
 
@@ -84,4 +85,7 @@ public class Article implements Serializable {
 
     public String getPublishedAt() { return publishedAt; }
     public void setPublishedAt(String publishedAt) { this.publishedAt = publishedAt; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

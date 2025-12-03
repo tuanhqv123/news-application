@@ -70,14 +70,39 @@
                 android:textSize="12sp"
                 tools:text="Article summary goes here..." />
 
-            <!-- Date Only -->
-            <TextView
-                android:id="@+id/categoryDateTextView"
-                android:layout_width="wrap_content"
+            <!-- Date and Status Badge Container -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/gray"
-                android:textSize="11sp"
-                tools:text="Dec, 2" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Date Only -->
+                <TextView
+                    android:id="@+id/categoryDateTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/gray"
+                    android:textSize="11sp"
+                    tools:text="Dec, 2" />
+
+                <!-- Status Badge -->
+                <TextView
+                    android:id="@+id/statusBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:text="PENDING"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

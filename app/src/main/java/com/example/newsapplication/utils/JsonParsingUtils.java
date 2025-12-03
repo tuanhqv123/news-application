@@ -78,12 +78,14 @@ public class JsonParsingUtils {
             String imageUrl = articleJson.optString("hero_image_url", "");
             String createdAt = articleJson.optString("created_at", "");
             String publishedAt = articleJson.optString("published_at", createdAt);
+            String status = articleJson.optString("status", "");
             
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
             
             Article article = new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
             article.setChannelName(channelName);
             article.setPublishedAt(publishedAt);
+            article.setStatus(status);
             return article;
         } catch (Exception e) {
             return null;
