@@ -83,6 +83,13 @@ public class JsonParsingUtils {
             Article article = new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
             article.setChannelName(channelName);
             article.setPublishedAt(publishedAt);
+
+            // TTS fields from API (if present)
+            String ttsUrl = articleJson.optString("tts_audio_url", null);
+            int ttsDurationSeconds = articleJson.optInt("tts_duration_seconds", 0);
+            article.setTtsAudioUrl(ttsUrl);
+            article.setTtsDurationSeconds(ttsDurationSeconds);
+
             return article;
         } catch (Exception e) {
             return null;

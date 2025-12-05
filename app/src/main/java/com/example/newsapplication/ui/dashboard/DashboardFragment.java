@@ -673,7 +673,13 @@ public class DashboardFragment extends Fragment {
             
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
             
-            return new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, dateStr, false);
+            Article article = new Article(id, title, summary, content, source, category, author, imageUrl, imageResId, dateStr, false);
+            // TTS fields
+            String ttsUrl = articleJson.optString("tts_audio_url", null);
+            int ttsDurationSeconds = articleJson.optInt("tts_duration_seconds", 0);
+            article.setTtsAudioUrl(ttsUrl);
+            article.setTtsDurationSeconds(ttsDurationSeconds);
+            return article;
         } catch (Exception e) {
             return null;
         }
