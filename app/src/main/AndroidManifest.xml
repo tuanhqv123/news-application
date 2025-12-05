@@ -45,6 +45,14 @@
             android:name=".ArticleDetailActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".CreateArticleActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".MyArticlesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
 
         <!-- Firebase Cloud Messaging Service -->
         <service

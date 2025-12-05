@@ -66,18 +66,10 @@ public class MediaEndpoints {
                     response -> {
                         try {
                             String responseStr = new String(response.data);
-                            
                             JSONObject jsonResponse = new JSONObject(responseStr);
-                            if (jsonResponse.optBoolean("success", false)) {
-                                JSONObject data = jsonResponse.optJSONObject("data");
-                                if (data != null && data.has("url")) {
-                                    String fileUrl = data.getString("url");
-                                    callback.onSuccess(fileUrl);
-                                }
-                            } else {
-                                String detail = jsonResponse.optString("detail", "");
-                                callback.onError(detail);
-                            }
+                            JSONObject data = jsonResponse.getJSONObject("data");
+                            String fileUrl = data.getString("url");
+                            callback.onSuccess(fileUrl);
                         } catch (Exception e) {
                             callback.onError(e.getMessage());
                         }
@@ -120,6 +112,7 @@ public class MediaEndpoints {
             callback.onError(e.getMessage());
         }
     }
+
     private static class MultipartRequest extends Request<NetworkResponse> {
         private final byte[] fileBytes;
         private final String fileName;

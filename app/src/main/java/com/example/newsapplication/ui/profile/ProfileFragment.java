@@ -71,8 +71,8 @@ public class ProfileFragment extends Fragment {
         // Profile menu items with role-based behavior
         binding.createPostItem.setOnClickListener(v -> {
             if (sessionManager.isAuthor() || sessionManager.isAdmin()) {
-                Toast.makeText(getContext(), "Create new article", Toast.LENGTH_SHORT).show();
-                // TODO: Navigate to article creation screen
+                android.content.Intent intent = new android.content.Intent(getActivity(), com.example.newsapplication.CreateArticleActivity.class);
+                startActivity(intent);
             } else {
                 Toast.makeText(getContext(), "Only authors and admins can create posts", Toast.LENGTH_SHORT).show();
             }
@@ -80,8 +80,8 @@ public class ProfileFragment extends Fragment {
 
         binding.myArticlesItem.setOnClickListener(v -> {
             if (sessionManager.isAuthor() || sessionManager.isAdmin()) {
-                Toast.makeText(getContext(), "My Articles", Toast.LENGTH_SHORT).show();
-                // TODO: Navigate to user's articles
+                android.content.Intent intent = new android.content.Intent(getActivity(), com.example.newsapplication.MyArticlesActivity.class);
+                startActivity(intent);
             } else {
                 Toast.makeText(getContext(), "Only authors and admins can view their articles", Toast.LENGTH_SHORT).show();
             }

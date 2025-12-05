@@ -20,6 +20,7 @@ public class Article implements Serializable {
     private boolean isVideo;
     private String ttsAudioUrl;
     private int ttsDurationSeconds;
+    private String status;
 
     public Article() {}
 
@@ -92,4 +93,7 @@ public class Article implements Serializable {
 
     public String getPublishedAt() { return publishedAt; }
     public void setPublishedAt(String publishedAt) { this.publishedAt = publishedAt; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

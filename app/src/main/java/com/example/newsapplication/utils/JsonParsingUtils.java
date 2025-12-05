@@ -2,6 +2,7 @@ package com.example.newsapplication.utils;
 
 import com.example.newsapplication.R;
 import com.example.newsapplication.model.Article;
+import com.example.newsapplication.model.Category;
 import com.example.newsapplication.model.Channel;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -77,19 +78,13 @@ public class JsonParsingUtils {
             String imageUrl = articleJson.optString("hero_image_url", "");
             String createdAt = articleJson.optString("created_at", "");
             String publishedAt = articleJson.optString("published_at", createdAt);
+            String status = articleJson.optString("status", "");
             
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
             
             Article article = new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
             article.setChannelName(channelName);
             article.setPublishedAt(publishedAt);
-
-            // TTS fields from API (if present)
-            String ttsUrl = articleJson.optString("tts_audio_url", null);
-            int ttsDurationSeconds = articleJson.optInt("tts_duration_seconds", 0);
-            article.setTtsAudioUrl(ttsUrl);
-            article.setTtsDurationSeconds(ttsDurationSeconds);
-
             return article;
         } catch (Exception e) {
             return null;
@@ -181,6 +176,54 @@ public class JsonParsingUtils {
             
             if (response.has("channels")) {
                 return response.getJSONArray("channels");
+            }
+            
+            if (response.has("results")) {
+                return response.getJSONArray("results");
+            }
+            
+            if (response.has("data") && response.opt("data") instanceof JSONArray) {
+                return response.getJSONArray("data");
+            }
+        } catch (Exception e) {
+        }
+        
+        return null;
+    }
+
+    // Parse categories from API response
+    public static List<Category> parseCategories(JSONObject response) {
+        List<Category> categories = new ArrayList<>();
+        
+        try {
+            JSONArray categoriesArray = extractCategoriesArray(response);
+            
+            if (categoriesArray != null) {
+                for (int i = 0; i < categoriesArray.length(); i++) {
+                    Category category = Category.fromJson(categoriesArray.getJSONObject(i));
+                    if (category != null) {
+                        categories.add(category);
+                    }
+                }
+            }
+        } catch (Exception e) {
+        }
+        
+        return categories;
+    }
+
+    // Extract categories array from various response formats
+    private static JSONArray extractCategoriesArray(JSONObject response) {
+        try {
+            if (response.has("data") && response.opt("data") instanceof JSONObject) {
+                JSONObject dataObj = response.getJSONObject("data");
+                if (dataObj.has("categories")) {
+                    return dataObj.getJSONArray("categories");
+                }
+            }
+            
+            if (response.has("categories")) {
+                return response.getJSONArray("categories");
             }
             
             if (response.has("results")) {

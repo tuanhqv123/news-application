@@ -1,0 +1,170 @@
+package com.example.newsapplication.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.newsapplication.R;
+import com.example.newsapplication.model.Article;
+import com.example.newsapplication.utils.DateUtils;
+import java.util.List;
+
+public class MyArticlesAdapter extends RecyclerView.Adapter<MyArticlesAdapter.MyArticleViewHolder> {
+    private List<Article> articles;
+    private OnItemClickListener listener;
+
+    public interface OnItemClickListener {
+        void onItemClick(Article article);
+    }
+
+    public MyArticlesAdapter(List<Article> articles, OnItemClickListener listener) {
+        this.articles = articles;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public MyArticleViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_news_feed, parent, false);
+        return new MyArticleViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull MyArticleViewHolder holder, int position) {
+        if (position < 0 || position >= articles.size()) {
+            return;
+        }
+
+        Article article = articles.get(position);
+        if (article == null) {
+            return;
+        }
+
+        if (holder.titleTextView != null && article.getTitle() != null) {
+            holder.titleTextView.setText(article.getTitle());
+        }
+        
+        // Set category
+        if (holder.categoryTextView != null && article.getCategory() != null) {
+            holder.categoryTextView.setText(article.getCategory());
+        }
+        
+        // Set date
+        if (holder.categoryDateTextView != null) {
+            String dateStr = article.getDate();
+            String formattedDate = "";
+            if (dateStr != null && !dateStr.isEmpty()) {
+                formattedDate = DateUtils.formatToShortMonthDay(dateStr);
+                if (formattedDate.isEmpty()) {
+                    formattedDate = dateStr;
+                }
+            }
+            
+            holder.categoryDateTextView.setText(formattedDate);
+        }
+        
+        // Set summary if available
+        if (holder.summaryTextView != null) {
+            String summary = article.getSummary();
+            if (summary != null && !summary.isEmpty()) {
+                holder.summaryTextView.setText(summary);
+                holder.summaryTextView.setVisibility(View.VISIBLE);
+            } else {
+                holder.summaryTextView.setVisibility(View.GONE);
+            }
+        }
+
+        // Load image from URL using Picasso
+        if (holder.imageView != null) {
+            if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
+                com.squareup.picasso.Picasso.get()
+                    .load(article.getImageUrl())
+                    .noPlaceholder()
+                    .error(R.drawable.placeholder_image)
+                    .fit()
+                    .centerCrop()
+                    .into(holder.imageView);
+            } else {
+                holder.imageView.setImageResource(R.drawable.placeholder_image);
+            }
+        }
+
+        // Handle status badge - ONLY SHOW IN MY ARTICLES
+        if (holder.statusBadge != null) {
+            String status = article.getStatus();
+            if (status != null && !status.isEmpty()) {
+                holder.statusBadge.setVisibility(View.VISIBLE);
+                
+                switch (status.toLowerCase()) {
+                    case "draft":
+                        holder.statusBadge.setText("DRAFT");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_draft);
+                        holder.statusBadge.setTextColor(0xFF616161);
+                        break;
+                    case "pending_review":
+                        holder.statusBadge.setText("PENDING");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_pending_review);
+                        holder.statusBadge.setTextColor(0xFFE65100);
+                        break;
+                    case "published":
+                        holder.statusBadge.setText("PUBLISHED");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_published);
+                        holder.statusBadge.setTextColor(0xFF2E7D32);
+                        break;
+                    case "rejected":
+                        holder.statusBadge.setText("REJECTED");
+                        holder.statusBadge.setBackgroundResource(R.drawable.badge_rejected);
+                        holder.statusBadge.setTextColor(0xFFC62828);
+                        break;
+                    default:
+                        holder.statusBadge.setVisibility(View.GONE);
+                        break;
+                }
+            } else {
+                holder.statusBadge.setVisibility(View.GONE);
+            }
+        }
+
+        // Handle item click
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(article);
+            }
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return articles.size();
+    }
+
+    public void updateArticles(List<Article> newArticles) {
+        this.articles = newArticles;
+        notifyDataSetChanged();
+    }
+
+    public static class MyArticleViewHolder extends RecyclerView.ViewHolder {
+        ImageView imageView;
+        TextView titleTextView;
+        TextView categoryTextView;
+        TextView summaryTextView;
+        TextView categoryDateTextView;
+        TextView statusBadge;
+
+        public MyArticleViewHolder(@NonNull View itemView) {
+            super(itemView);
+            imageView = itemView.findViewById(R.id.imageView);
+            titleTextView = itemView.findViewById(R.id.titleTextView);
+            categoryTextView = itemView.findViewById(R.id.categoryTextView);
+            summaryTextView = itemView.findViewById(R.id.summaryTextView);
+            categoryDateTextView = itemView.findViewById(R.id.categoryDateTextView);
+            statusBadge = itemView.findViewById(R.id.statusBadge);
+        }
+    }
+}

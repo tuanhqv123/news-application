@@ -80,6 +80,10 @@ public class NewsRepository {
         articleEndpoints.publishArticle(articleId, wrapCallback(callback));
     }
 
+    public void getMyArticles(int page, int limit, RepositoryCallback<JSONObject> callback) {
+        articleEndpoints.getMyArticles(page, limit, wrapCallback(callback));
+    }
+
     // ==================== Comments ====================
 
     public void getComments(String articleId, RepositoryCallback<JSONObject> callback) {
