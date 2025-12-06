@@ -18,6 +18,8 @@ public class Article implements Serializable {
     private String date;
     private boolean isBookmarked;
     private boolean isVideo;
+    private String ttsAudioUrl;
+    private int ttsDurationSeconds;
     private String status;
 
     public Article() {}
@@ -79,6 +81,12 @@ public class Article implements Serializable {
 
     public boolean isVideo() { return isVideo; }
     public void setVideo(boolean video) { isVideo = video; }
+
+    public String getTtsAudioUrl() { return ttsAudioUrl; }
+    public void setTtsAudioUrl(String ttsAudioUrl) { this.ttsAudioUrl = ttsAudioUrl; }
+
+    public int getTtsDurationSeconds() { return ttsDurationSeconds; }
+    public void setTtsDurationSeconds(int ttsDurationSeconds) { this.ttsDurationSeconds = ttsDurationSeconds; }
 
     public String getChannelName() { return channelName; }
     public void setChannelName(String channelName) { this.channelName = channelName; }

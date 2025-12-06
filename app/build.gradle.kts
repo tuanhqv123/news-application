@@ -40,6 +40,8 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
+    // Media support library for NotificationCompat.MediaStyle (music-style notification)
+    implementation("androidx.media:media:1.7.0")
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.navigation.fragment)

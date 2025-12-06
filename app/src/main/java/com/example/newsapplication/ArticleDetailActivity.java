@@ -1,7 +1,11 @@
 package com.example.newsapplication;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -29,6 +33,8 @@ import com.example.newsapplication.utils.FontSizeManager;
 import com.example.newsapplication.utils.DateUtils;
 import com.example.newsapplication.repository.NewsRepository;
 import com.example.newsapplication.auth.UserSessionManager;
+import com.example.newsapplication.audio.AudioPlayerService;
+import com.example.newsapplication.utils.JsonParsingUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -77,11 +83,41 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private UserSessionManager sessionManager;
     
     // Audio player
-    private MediaPlayer mediaPlayer;
     private boolean isPlaying = false;
-    private static final String AUDIO_BASE_URL = "https://byvkcpdtprodvhadpdix.supabase.co/storage/v1/object/public/audio_articles/";
-    private Handler progressHandler;
-    private Runnable progressRunnable;
+    private Handler uiProgressHandler;
+    private Runnable uiProgressRunnable;
+    private boolean isUserSeeking = false;
+    private int audioDurationMs = 0;
+    
+    // BroadcastReceiver for audio state updates
+    private BroadcastReceiver audioStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (AudioPlayerService.ACTION_AUDIO_STATE.equals(intent.getAction())) {
+                boolean playing = intent.getBooleanExtra(AudioPlayerService.EXTRA_IS_PLAYING, false);
+                int position = intent.getIntExtra(AudioPlayerService.EXTRA_POSITION_MS, 0);
+                int duration = intent.getIntExtra(AudioPlayerService.EXTRA_DURATION_MS_BROADCAST, 0);
+                String title = intent.getStringExtra(AudioPlayerService.EXTRA_AUDIO_TITLE);
+                if (title == null) {
+                    title = "";
+                }
+                
+                isPlaying = playing;
+                if (duration > 0 && audioDurationMs == 0) {
+                    audioDurationMs = duration;
+                    audioProgressSeekBar.setMax(duration);
+                    audioDurationTextView.setText(formatMillis(duration));
+                }
+                
+                if (!isUserSeeking) {
+                    audioProgressSeekBar.setProgress(position);
+                    audioCurrentTimeTextView.setText(formatMillis(position));
+                }
+                
+                updateAudioIcons();
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +130,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         // Initialize repository and session manager
         newsRepository = new NewsRepository(this);
         sessionManager = new UserSessionManager(this);
-        progressHandler = new Handler(Looper.getMainLooper());
+        uiProgressHandler = new Handler(Looper.getMainLooper());
 
         initViews();
         setupCommentsRecyclerView();
@@ -237,8 +273,40 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 
                 // Setup audio player if article has ID
                 setupAudioPlayer();
+                
+                // Fetch full article details to get tts_audio_url and tts_duration_seconds
+                if (currentArticle != null && currentArticle.getId() != null && !currentArticle.getId().isEmpty()) {
+                    fetchFullArticleDetails();
+                }
             }
         }
+    }
+    
+    private void fetchFullArticleDetails() {
+        newsRepository.getArticle(currentArticle.getId(), new NewsRepository.RepositoryCallback<JSONObject>() {
+            @Override
+            public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                if (response.isSuccess() && response.getData() != null) {
+                    try {
+                        JSONObject articleJson = response.getData();
+                        // Update article with TTS fields
+                        String ttsUrl = articleJson.optString("tts_audio_url", null);
+                        int ttsDurationSeconds = articleJson.optInt("tts_duration_seconds", 0);
+                        currentArticle.setTtsAudioUrl(ttsUrl);
+                        currentArticle.setTtsDurationSeconds(ttsDurationSeconds);
+                        
+                        // Update audio player setup if needed
+                        if (ttsDurationSeconds > 0) {
+                            audioDurationMs = ttsDurationSeconds * 1000;
+                            audioProgressSeekBar.setMax(audioDurationMs);
+                            audioDurationTextView.setText(formatMillis(audioDurationMs));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
     }
     
     private void setupAudioPlayer() {
@@ -257,13 +325,31 @@ public class ArticleDetailActivity extends AppCompatActivity {
         audioCurrentTimeTextView.setText("00:00");
         audioDurationTextView.setText("00:00");
         audioProgressSeekBar.setProgress(0);
+        audioProgressSeekBar.setMax(0);
         isPlaying = false;
+        
+        // Use tts_duration_seconds if available
+        if (currentArticle.getTtsDurationSeconds() > 0) {
+            audioDurationMs = currentArticle.getTtsDurationSeconds() * 1000;
+            audioProgressSeekBar.setMax(audioDurationMs);
+            audioDurationTextView.setText(formatMillis(audioDurationMs));
+        }
+        
         updateAudioIcons();
         
         // Setup click listener
         audioPlayImageView.setOnClickListener(v -> toggleAudioPlayback());
         audioControlPlayPause.setOnClickListener(v -> toggleAudioPlayback());
         setupSeekBarListener();
+        
+        // Check if audio is already playing from service
+        if (AudioPlayerService.sIsPlaying && AudioPlayerService.sCurrentTitle != null) {
+            isPlaying = true;
+            updateAudioIcons();
+            if (audioControlBar.getVisibility() != View.VISIBLE) {
+                audioControlBar.setVisibility(View.VISIBLE);
+            }
+        }
     }
     
     private void setupSeekBarListener() {
@@ -271,19 +357,24 @@ public class ArticleDetailActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
+                    isUserSeeking = true;
                     audioCurrentTimeTextView.setText(formatMillis(progress));
                 }
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
+                isUserSeeking = true;
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                if (mediaPlayer != null) {
-                    mediaPlayer.seekTo(seekBar.getProgress());
-                }
+                isUserSeeking = false;
+                // Send seek command to service
+                Intent seekIntent = new Intent(ArticleDetailActivity.this, AudioPlayerService.class);
+                seekIntent.setAction(AudioPlayerService.ACTION_SEEK);
+                seekIntent.putExtra(AudioPlayerService.EXTRA_SEEK_POSITION, seekBar.getProgress());
+                startService(seekIntent);
             }
         });
     }
@@ -294,28 +385,27 @@ public class ArticleDetailActivity extends AppCompatActivity {
         audioControlPlayPause.setImageResource(icon);
     }
     
-    private void startProgressUpdates() {
-        if (progressRunnable != null) {
-            progressHandler.removeCallbacks(progressRunnable);
+    private void startLocalUIUpdates() {
+        if (uiProgressRunnable != null) {
+            uiProgressHandler.removeCallbacks(uiProgressRunnable);
         }
-        progressRunnable = new Runnable() {
+        uiProgressRunnable = new Runnable() {
             @Override
             public void run() {
-                if (mediaPlayer != null) {
-                    int position = mediaPlayer.getCurrentPosition();
-                    audioProgressSeekBar.setProgress(position);
-                    audioCurrentTimeTextView.setText(formatMillis(position));
-                    progressHandler.postDelayed(this, 500);
+                if (isPlaying && audioDurationMs > 0 && !isUserSeeking) {
+                    // Update UI locally based on duration
+                    // The actual position will come from the service via broadcast
+                    uiProgressHandler.postDelayed(this, 1000);
                 }
             }
         };
-        progressHandler.post(progressRunnable);
+        uiProgressHandler.post(uiProgressRunnable);
     }
     
-    private void stopProgressUpdates() {
-        if (progressRunnable != null) {
-            progressHandler.removeCallbacks(progressRunnable);
-            progressRunnable = null;
+    private void stopLocalUIUpdates() {
+        if (uiProgressRunnable != null) {
+            uiProgressHandler.removeCallbacks(uiProgressRunnable);
+            uiProgressRunnable = null;
         }
     }
     
@@ -330,10 +420,17 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
     
     private String getAudioUrl() {
-        if (currentArticle == null || currentArticle.getId() == null) {
+        if (currentArticle == null) {
             return null;
         }
-        return AUDIO_BASE_URL + currentArticle.getId() + ".mp3";
+        // Prefer tts_audio_url from API, fallback to constructed URL
+        if (currentArticle.getTtsAudioUrl() != null && !currentArticle.getTtsAudioUrl().isEmpty()) {
+            return currentArticle.getTtsAudioUrl();
+        }
+        if (currentArticle.getId() != null) {
+            return "https://byvkcpdtprodvhadpdix.supabase.co/storage/v1/object/public/audio_articles/" + currentArticle.getId() + ".mp3";
+        }
+        return null;
     }
     
     private void toggleAudioPlayback() {
@@ -351,82 +448,42 @@ public class ArticleDetailActivity extends AppCompatActivity {
             return;
         }
         
-        try {
-            if (mediaPlayer == null) {
-                mediaPlayer = new MediaPlayer();
-                mediaPlayer.setDataSource(audioUrl);
-                mediaPlayer.prepareAsync();
-                
-                mediaPlayer.setOnPreparedListener(mp -> {
-                    // Lần đầu play: hiện thanh control
-                    if (audioControlBar.getVisibility() != View.VISIBLE) {
-                        audioControlBar.setVisibility(View.VISIBLE);
-                    }
-                    int duration = mp.getDuration();
-                    audioProgressSeekBar.setMax(duration);
-                    audioDurationTextView.setText(formatMillis(duration));
-                    mp.start();
-                    isPlaying = true;
-                    updateAudioIcons();
-                    startProgressUpdates();
-                });
-                
-                mediaPlayer.setOnCompletionListener(mp -> {
-                    isPlaying = false;
-                    stopProgressUpdates();
-                    audioProgressSeekBar.setProgress(0);
-                    audioCurrentTimeTextView.setText("00:00");
-                    updateAudioIcons();
-                    releaseMediaPlayer();
-                });
-                
-                mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-                    Toast.makeText(ArticleDetailActivity.this, "Error playing audio", Toast.LENGTH_SHORT).show();
-                    isPlaying = false;
-                    stopProgressUpdates();
-                    audioProgressSeekBar.setProgress(0);
-                    audioCurrentTimeTextView.setText("00:00");
-                    updateAudioIcons();
-                    releaseMediaPlayer();
-                    return true;
-                });
-            } else {
-                mediaPlayer.start();
-                isPlaying = true;
-                updateAudioIcons();
-                startProgressUpdates();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error loading audio", Toast.LENGTH_SHORT).show();
-            releaseMediaPlayer();
+        // Show control bar when play is pressed
+        if (audioControlBar.getVisibility() != View.VISIBLE) {
+            audioControlBar.setVisibility(View.VISIBLE);
         }
+        
+        // Get duration from article
+        int durationMs = 0;
+        if (currentArticle.getTtsDurationSeconds() > 0) {
+            durationMs = currentArticle.getTtsDurationSeconds() * 1000;
+            audioDurationMs = durationMs;
+            audioProgressSeekBar.setMax(durationMs);
+            audioDurationTextView.setText(formatMillis(durationMs));
+        }
+        
+        // Start service
+        Intent playIntent = new Intent(this, AudioPlayerService.class);
+        playIntent.setAction(AudioPlayerService.ACTION_PLAY);
+        playIntent.putExtra(AudioPlayerService.EXTRA_AUDIO_URL, audioUrl);
+        String articleTitle = currentArticle.getTitle();
+        playIntent.putExtra(AudioPlayerService.EXTRA_AUDIO_TITLE, articleTitle != null ? articleTitle : "Audio");
+        playIntent.putExtra(AudioPlayerService.EXTRA_DURATION_MS, durationMs);
+        startService(playIntent);
+        
+        isPlaying = true;
+        updateAudioIcons();
+        startLocalUIUpdates();
     }
     
     private void pauseAudio() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-            isPlaying = false;
-            updateAudioIcons();
-            stopProgressUpdates();
-        }
-    }
-    
-    private void releaseMediaPlayer() {
-        if (mediaPlayer != null) {
-            stopProgressUpdates();
-            try {
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.stop();
-                }
-                mediaPlayer.release();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            mediaPlayer = null;
-            isPlaying = false;
-            updateAudioIcons();
-        }
+        Intent pauseIntent = new Intent(this, AudioPlayerService.class);
+        pauseIntent.setAction(AudioPlayerService.ACTION_PAUSE);
+        startService(pauseIntent);
+        
+        isPlaying = false;
+        updateAudioIcons();
+        stopLocalUIUpdates();
     }
     
     private boolean isHtmlContent(String content) {
@@ -743,18 +800,34 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
     
     @Override
-    protected void onPause() {
-        super.onPause();
-        // Pause audio when activity is paused
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            pauseAudio();
+    protected void onStart() {
+        super.onStart();
+        // Register broadcast receiver
+        IntentFilter filter = new IntentFilter(AudioPlayerService.ACTION_AUDIO_STATE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(audioStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(audioStateReceiver, filter);
         }
+    }
+    
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Unregister broadcast receiver
+        try {
+            unregisterReceiver(audioStateReceiver);
+        } catch (Exception e) {
+            // Already unregistered
+        }
+        // Hide control bar when leaving article, but keep service running
+        audioControlBar.setVisibility(View.GONE);
+        stopLocalUIUpdates();
     }
     
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Release MediaPlayer when activity is destroyed
-        releaseMediaPlayer();
+        stopLocalUIUpdates();
     }
 }

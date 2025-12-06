@@ -85,7 +85,6 @@ public class JsonParsingUtils {
             Article article = new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
             article.setChannelName(channelName);
             article.setPublishedAt(publishedAt);
-            article.setStatus(status);
             return article;
         } catch (Exception e) {
             return null;

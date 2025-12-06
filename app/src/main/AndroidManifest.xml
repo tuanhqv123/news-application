@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
+    <!-- Foreground service for media playback (required for startForeground) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 14+ requires specific mediaPlayback foreground service permission -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
     <!-- For Android 13 (API 33) and above - Notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
@@ -61,6 +66,12 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- Audio playback foreground service -->
+        <service
+            android:name=".audio.AudioPlayerService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
     </application>
 
