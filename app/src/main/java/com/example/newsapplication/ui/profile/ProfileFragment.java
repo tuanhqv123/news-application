@@ -1,6 +1,7 @@
 package com.example.newsapplication.ui.profile;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +35,7 @@ public class ProfileFragment extends Fragment {
     private TextView userEmail;
     private LinearLayout profileContent;
     private LinearLayout profileMenuItems;
+    private LinearLayout adminPanelSection;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -65,6 +67,7 @@ public class ProfileFragment extends Fragment {
         userEmail = binding.userEmail;
         profileContent = binding.profileContent;
         profileMenuItems = binding.profileMenuItems;
+        adminPanelSection = binding.adminPanelSection;
     }
 
     private void setupClickListeners() {
@@ -96,6 +99,27 @@ public class ProfileFragment extends Fragment {
             showEditProfileDialog();
         });
 
+        // Admin menu items
+        binding.manageUsersItem.setOnClickListener(v -> {
+            android.content.Intent intent = new android.content.Intent(getActivity(), com.example.newsapplication.admin.ManageUsersActivity.class);
+            startActivity(intent);
+        });
+
+        binding.manageArticlesItem.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Manage Articles - Coming soon", Toast.LENGTH_SHORT).show();
+            // TODO: Open manage articles screen
+        });
+
+        binding.manageChannelsItem.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Manage Channels - Coming soon", Toast.LENGTH_SHORT).show();
+            // TODO: Open manage channels screen
+        });
+
+        binding.manageCategoriesItem.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Manage Categories - Coming soon", Toast.LENGTH_SHORT).show();
+            // TODO: Open manage categories screen
+        });
+
         // User avatar click
         userAvatar.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Change profile picture", Toast.LENGTH_SHORT).show();
@@ -104,19 +128,37 @@ public class ProfileFragment extends Fragment {
         // Login/Logout button
         binding.authButton.setOnClickListener(v -> {
             if (sessionManager.isLoggedIn()) {
-                // Logout logic
+                // Logout logic - use AuthService to properly call API
                 Toast.makeText(getContext(), "Logging out...", Toast.LENGTH_SHORT).show();
-                sessionManager.logoutUser();
 
-                // Navigate back to home
-                if (getActivity() instanceof MainActivity) {
-                    MainActivity mainActivity = (MainActivity) getActivity();
-                    // Restart activity to clear navigation state
-                    android.content.Intent intent = new android.content.Intent(getActivity(), MainActivity.class);
-                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    getActivity().finish();
-                }
+                AuthService authService = new AuthService(getContext());
+                authService.logout(new AuthService.AuthResultCallback() {
+                    @Override
+                    public void onSuccess(JSONObject response) {
+                        // Navigate back to home after successful logout
+                        if (getActivity() instanceof MainActivity) {
+                            MainActivity mainActivity = (MainActivity) getActivity();
+                            // Restart activity to clear navigation state
+                            android.content.Intent intent = new android.content.Intent(getActivity(), MainActivity.class);
+                            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            getActivity().finish();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        // Still navigate to home even if logout API fails
+                        Toast.makeText(getContext(), "Logout completed", Toast.LENGTH_SHORT).show();
+                        if (getActivity() instanceof MainActivity) {
+                            MainActivity mainActivity = (MainActivity) getActivity();
+                            android.content.Intent intent = new android.content.Intent(getActivity(), MainActivity.class);
+                            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            getActivity().finish();
+                        }
+                    }
+                });
             } else {
                 // Show login dialog
                 if (getActivity() instanceof MainActivity) {
@@ -147,6 +189,13 @@ public class ProfileFragment extends Fragment {
         String email = sessionManager.getUserEmail();
         String role = sessionManager.getUserRole();
         String avatarUrl = sessionManager.getAvatarUrl();
+
+        // Debug logging
+        Log.d("ProfileFragment", "Loading profile data:");
+        Log.d("ProfileFragment", "  Display Name: " + displayName);
+        Log.d("ProfileFragment", "  Email: " + email);
+        Log.d("ProfileFragment", "  Role: " + role);
+        Log.d("ProfileFragment", "  Avatar URL: " + avatarUrl);
         
         userName.setText(displayName.isEmpty() ? email.split("@")[0] : displayName);
         userEmail.setText(email);
@@ -155,12 +204,39 @@ public class ProfileFragment extends Fragment {
         
         // Load avatar image with circular transform
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            Log.d("ProfileFragment", "Loading avatar URL: " + avatarUrl);
+
+            // First try to load from cache/network with better error handling
             Picasso.get()
                     .load(avatarUrl)
                     .transform(new CircleTransform())
                     .placeholder(R.drawable.ic_launcher_foreground)
                     .error(R.drawable.ic_launcher_foreground)
-                    .into(userAvatar);
+                    .into(userAvatar, new com.squareup.picasso.Callback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d("ProfileFragment", "Avatar loaded successfully");
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e("ProfileFragment", "Failed to load avatar", e);
+                            // Retry once with memory cleared
+                            Picasso.get()
+                                    .invalidate(avatarUrl);
+                            Picasso.get()
+                                    .load(avatarUrl)
+                                    .transform(new CircleTransform())
+                                    .placeholder(R.drawable.ic_launcher_foreground)
+                                    .error(R.drawable.ic_launcher_foreground)
+                                    .memoryPolicy(com.squareup.picasso.MemoryPolicy.NO_CACHE, com.squareup.picasso.MemoryPolicy.NO_STORE)
+                                    .networkPolicy(com.squareup.picasso.NetworkPolicy.NO_CACHE)
+                                    .into(userAvatar);
+                        }
+                    });
+        } else {
+            // Set default avatar
+            userAvatar.setImageResource(R.drawable.ic_launcher_foreground);
         }
         
         // Show/hide menu items based on role
@@ -175,6 +251,13 @@ public class ProfileFragment extends Fragment {
         } else {
             binding.createPostItem.setVisibility(View.GONE);
             binding.myArticlesItem.setVisibility(View.GONE);
+        }
+        
+        // Show admin panel only for admins
+        if (sessionManager.isAdmin()) {
+            adminPanelSection.setVisibility(View.VISIBLE);
+        } else {
+            adminPanelSection.setVisibility(View.GONE);
         }
         
         binding.settingsItem.setVisibility(View.VISIBLE);

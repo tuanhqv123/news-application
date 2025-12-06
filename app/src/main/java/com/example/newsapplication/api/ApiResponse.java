@@ -28,5 +28,6 @@ public class ApiResponse<T> {
     public boolean isSuccess() { return success; }
     public T getData() { return data; }
     public String getErrorMessage() { return errorMessage; }
+    public String getMessage() { return errorMessage; }
     public int getStatusCode() { return statusCode; }
 }

@@ -16,6 +16,8 @@ import com.example.newsapplication.auth.AuthenticationDialog;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
 import com.example.newsapplication.auth.EditProfileDialog;
+import com.example.newsapplication.notifications.NotificationManager;
+import org.json.JSONObject;
 
 import androidx.fragment.app.Fragment;
 import android.content.Intent;
@@ -48,12 +50,15 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
         // Initialize session manager
         sessionManager = new UserSessionManager(this);
-        
+
         // Initialize API client with auth token if available
         String authToken = sessionManager.getAuthToken();
         if (authToken != null) {
             new AuthService(this); // This will initialize ApiClient with token
         }
+
+        // Initialize notification system
+        NotificationManager.getInstance(this).initialize();
 
         // Set up navigation to include all fragments
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -176,9 +181,12 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         if (userName.isEmpty()) {
             userName = sessionManager.getUserEmail().split("@")[0];
         }
-        
+
         Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
-        
+
+        // Update notification token with user ID after successful login
+        NotificationManager.getInstance(this).onUserLoggedIn();
+
         navController.navigate(R.id.navigation_saved);
         updateNavigationState(NAV_SAVED);
     }

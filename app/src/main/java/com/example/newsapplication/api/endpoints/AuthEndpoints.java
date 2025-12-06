@@ -1,5 +1,7 @@
 package com.example.newsapplication.api.endpoints;
 
+import android.content.Context;
+
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.ApiConfig;
 import com.example.newsapplication.api.ApiResponse;
@@ -10,9 +12,20 @@ import org.json.JSONObject;
 
 public class AuthEndpoints {
     private final ApiClient apiClient;
+    private Context context;
 
     public AuthEndpoints(ApiClient apiClient) {
         this.apiClient = apiClient;
+    }
+
+    public AuthEndpoints(Context context) {
+        this.context = context;
+        this.apiClient = new ApiClient(context);
+    }
+
+    public interface InviteUserCallback {
+        void onSuccess(String userId, String email, String role);
+        void onError(String error);
     }
 
     public void login(String email, String password, ApiClient.ApiCallback<JSONObject> callback) {
@@ -26,7 +39,24 @@ public class AuthEndpoints {
     }
 
     public void logout(ApiClient.ApiCallback<JSONObject> callback) {
-        apiClient.post(ApiConfig.API_VERSION + "/auth/logout", null, callback);
+        logout(null, callback);
+    }
+
+    public void logout(String fcmToken, ApiClient.ApiCallback<JSONObject> callback) {
+        String endpoint = ApiConfig.API_VERSION + "/auth/logout";
+        JSONObject requestBody = null;
+
+        if (fcmToken != null && !fcmToken.isEmpty()) {
+            requestBody = new JSONObject();
+            try {
+                requestBody.put("fcm_token", fcmToken);
+            } catch (JSONException e) {
+                callback.onError(ApiResponse.error(e.getMessage(), 0));
+                return;
+            }
+        }
+
+        apiClient.post(endpoint, requestBody, callback);
     }
 
     public void getMe(ApiClient.ApiCallback<JSONObject> callback) {
@@ -47,6 +77,52 @@ public class AuthEndpoints {
             return;
         }
         apiClient.put(ApiConfig.API_VERSION + "/auth/me", requestBody, callback);
+    }
+
+    public void inviteUser(String email, int roleId, Integer channelId, InviteUserCallback callback) {
+        String invitedBy = "admin@gmail.com";
+        if (context != null) {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("NewsAppSession", Context.MODE_PRIVATE);
+            invitedBy = prefs.getString("userEmail", "admin@gmail.com");
+        }
+        
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("email", email);
+            requestBody.put("role_id", roleId);
+            requestBody.put("invited_by", invitedBy);
+            if (channelId != null && channelId > 0) {
+                requestBody.put("channel_id", channelId);
+            }
+        } catch (JSONException e) {
+            callback.onError(e.getMessage());
+            return;
+        }
+        
+        apiClient.post(ApiConfig.API_VERSION + "/auth/admin/invite-user", requestBody, new ApiClient.ApiCallback<JSONObject>() {
+            @Override
+            public void onSuccess(ApiResponse<JSONObject> response) {
+                try {
+                    JSONObject fullResponse = response.getData();
+                    JSONObject data = fullResponse.getJSONObject("data");
+                    String userId = data.optString("user_id", "");
+                    String userEmail = data.optString("email", "");
+                    String role = data.optString("role", "");
+                    callback.onSuccess(userId, userEmail, role);
+                } catch (Exception e) {
+                    callback.onError(e.getMessage());
+                }
+            }
+
+            @Override
+            public void onError(ApiResponse<JSONObject> error) {
+                callback.onError(error.getMessage());
+            }
+        });
+    }
+
+    public void inviteUser(String email, int roleId, InviteUserCallback callback) {
+        inviteUser(email, roleId, null, callback);
     }
 
     public void inviteUser(String email, int roleId, Integer channelId, String invitedBy, ApiClient.ApiCallback<JSONObject> callback) {

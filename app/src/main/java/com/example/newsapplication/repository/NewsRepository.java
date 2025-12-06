@@ -188,14 +188,6 @@ public class NewsRepository {
 
     // ==================== Admin: Users ====================
 
-    public void getPendingAuthors(RepositoryCallback<JSONObject> callback) {
-        userEndpoints.getPendingAuthors(wrapCallback(callback));
-    }
-
-    public void approveAuthor(String userId, RepositoryCallback<JSONObject> callback) {
-        userEndpoints.approveAuthor(userId, wrapCallback(callback));
-    }
-
     public void getAllUserProfiles(RepositoryCallback<JSONObject> callback) {
         userEndpoints.getAllUserProfiles(wrapCallback(callback));
     }

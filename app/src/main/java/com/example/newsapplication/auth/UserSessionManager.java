@@ -109,10 +109,13 @@ public class UserSessionManager {
     private static final String KEY_AVATAR_URL = "avatarUrl";
 
     public String getAvatarUrl() {
-        return prefs.getString(KEY_AVATAR_URL, null);
+        String avatarUrl = prefs.getString(KEY_AVATAR_URL, null);
+        android.util.Log.d("UserSessionManager", "getAvatarUrl() returning: " + avatarUrl);
+        return avatarUrl;
     }
 
     public void setAvatarUrl(String avatarUrl) {
+        android.util.Log.d("UserSessionManager", "setAvatarUrl() called with: " + avatarUrl);
         editor.putString(KEY_AVATAR_URL, avatarUrl);
         editor.apply();
     }

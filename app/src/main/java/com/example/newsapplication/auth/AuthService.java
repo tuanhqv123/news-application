@@ -43,7 +43,13 @@ public class AuthService {
                         String displayName = userData.optString("display_name", email.split("@")[0]);
                         String role = userData.optString("role", "reader");
                         String avatarUrl = userData.optString("avatar_url", null);
-                        
+                        String userId = userData.optString("user_id", userData.optString("id", null));
+
+                        // Debug logging
+                        android.util.Log.d("AuthService", "Login successful - User: " + userEmail);
+                        android.util.Log.d("AuthService", "Avatar URL: " + avatarUrl);
+                        android.util.Log.d("AuthService", "User ID: " + userId);
+
                         apiClient.setAuthToken(token);
                         if (refreshToken != null) {
                             sessionManager.createLoginSession(userEmail, displayName, role, token, refreshToken);
@@ -51,7 +57,14 @@ public class AuthService {
                             sessionManager.createLoginSession(userEmail, displayName, role, token);
                         }
                         if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                            android.util.Log.d("AuthService", "Saving avatar URL to session: " + avatarUrl);
                             sessionManager.setAvatarUrl(avatarUrl);
+                        } else {
+                            android.util.Log.w("AuthService", "No avatar URL found in response");
+                        }
+                        // Save user UUID for notifications
+                        if (userId != null && !userId.isEmpty()) {
+                            com.example.newsapplication.notifications.NotificationManager.getInstance(context).saveUserId(userId);
                         }
                         
                         String message = data.optString("message", "Login successful");
@@ -100,21 +113,42 @@ public class AuthService {
     }
 
     public void logout(AuthResultCallback callback) {
-        authEndpoints.logout(new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(ApiResponse<JSONObject> response) {
-                sessionManager.logoutUser();
-                apiClient.clearAuthToken();
-                callback.onSuccess(response.getData());
-            }
+        // Get current FCM token before logout
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    final String fcmToken = task.isSuccessful() && task.getResult() != null ? task.getResult() : null;
 
-            @Override
-            public void onError(ApiResponse<JSONObject> error) {
-                sessionManager.logoutUser();
-                apiClient.clearAuthToken();
-                callback.onSuccess(null);
-            }
-        });
+                    // Logout API call with optional fcm_token
+                    authEndpoints.logout(fcmToken, new ApiClient.ApiCallback<JSONObject>() {
+                        @Override
+                        public void onSuccess(ApiResponse<JSONObject> response) {
+                            sessionManager.logoutUser();
+                            apiClient.clearAuthToken();
+
+                            // Reset notification token to guest mode
+                            if (fcmToken != null) {
+                                com.example.newsapplication.notifications.NotificationManager.getInstance(context)
+                                    .resetTokenToGuest(fcmToken);
+                            }
+
+                            callback.onSuccess(response.getData());
+                        }
+
+                        @Override
+                        public void onError(ApiResponse<JSONObject> error) {
+                            sessionManager.logoutUser();
+                            apiClient.clearAuthToken();
+
+                            // Still reset token to guest mode even if logout API fails
+                            if (fcmToken != null) {
+                                com.example.newsapplication.notifications.NotificationManager.getInstance(context)
+                                    .resetTokenToGuest(fcmToken);
+                            }
+
+                            callback.onSuccess(null);
+                        }
+                    });
+                });
     }
 
     public void getCurrentUser(AuthResultCallback callback) {
