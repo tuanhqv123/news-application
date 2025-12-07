@@ -100,6 +100,14 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             new AuthService(this); // This will initialize ApiClient with token
         }
 
+        // Request notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+
         // Initialize notification system
         com.example.newsapplication.notifications.NotificationManager.getInstance(this).initialize();
 

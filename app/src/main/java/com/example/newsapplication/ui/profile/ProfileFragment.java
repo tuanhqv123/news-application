@@ -106,18 +106,18 @@ public class ProfileFragment extends Fragment {
         });
 
         binding.manageArticlesItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Manage Articles - Coming soon", Toast.LENGTH_SHORT).show();
-            // TODO: Open manage articles screen
+            android.content.Intent intent = new android.content.Intent(getActivity(), com.example.newsapplication.admin.ManageArticlesActivity.class);
+            startActivity(intent);
         });
 
         binding.manageChannelsItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Manage Channels - Coming soon", Toast.LENGTH_SHORT).show();
-            // TODO: Open manage channels screen
+            android.content.Intent intent = new android.content.Intent(getActivity(), com.example.newsapplication.admin.ManageChannelsActivity.class);
+            startActivity(intent);
         });
 
         binding.manageCategoriesItem.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Manage Categories - Coming soon", Toast.LENGTH_SHORT).show();
-            // TODO: Open manage categories screen
+            android.content.Intent intent = new android.content.Intent(getActivity(), com.example.newsapplication.admin.ManageCategoriesActivity.class);
+            startActivity(intent);
         });
 
         // User avatar click

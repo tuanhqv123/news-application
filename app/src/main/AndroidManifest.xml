@@ -57,6 +57,18 @@
             android:name=".admin.ManageUsersActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".admin.ManageArticlesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".admin.ManageChannelsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".admin.ManageCategoriesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
 
         <!-- Firebase Cloud Messaging Service -->
         <service
@@ -72,6 +84,11 @@
             android:name=".audio.AudioPlayerService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!-- Firebase Cloud Messaging default notification channel -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/default_notification_channel_id" />
 
     </application>
 

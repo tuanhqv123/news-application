@@ -26,7 +26,7 @@ import java.util.Map;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "FCMService";
-    private static final String CHANNEL_ID = "article_notifications";
+    private static final String CHANNEL_ID = "news_channel";
 
     @Override
     public void onNewToken(@NonNull String token) {
@@ -116,7 +116,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         // Build notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification) // You'll need to add this icon
+                .setSmallIcon(android.R.drawable.ic_dialog_info) // Using default Android icon
                 .setContentTitle(title)
                 .setContentText(message)
                 .setAutoCancel(true)
