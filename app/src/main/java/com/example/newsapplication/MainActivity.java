@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,6 +28,9 @@ import com.example.newsapplication.auth.AuthenticationDialog;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
 import com.example.newsapplication.auth.EditProfileDialog;
+import com.example.newsapplication.auth.PasswordSetupDialog;
+import com.example.newsapplication.api.ApiResponse;
+import com.example.newsapplication.api.endpoints.AuthEndpoints;
 import org.json.JSONObject;
 import com.example.newsapplication.audio.AudioPlayerService;
 
@@ -44,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     private UserSessionManager sessionManager;
     private AuthenticationDialog authDialog;
     private EditProfileDialog editProfileDialog;
+    private PasswordSetupDialog passwordSetupDialog;
 
     // Audio mini-player views
     private View audioMiniPlayerBar;
@@ -169,9 +174,20 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
+        // Check if we need to show login dialog (e.g., after logout)
+        if (getIntent() != null && getIntent().getBooleanExtra("showLogin", false)) {
+            // Show login dialog after a short delay to ensure UI is ready
+            new android.os.Handler().postDelayed(() -> {
+                showLoginDialog();
+            }, 300);
+        }
+
         // Initialize audio mini-player
         initAudioMiniPlayer();
+
+        // Handle deep links
+        handleIntent(getIntent());
     }
     
     private void initAudioMiniPlayer() {
@@ -340,6 +356,62 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             authDialog = new AuthenticationDialog(this, this);
         }
         authDialog.show();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent == null || intent.getData() == null) {
+            return;
+        }
+
+        Uri uri = intent.getData();
+        Log.d("MainActivity", "Deep link received: " + uri.toString());
+
+        if ("newsapp".equals(uri.getScheme()) && "auth".equals(uri.getHost())) {
+            String path = uri.getPath();
+            if ("/invite".equals(path)) {
+                String tokenHash = uri.getQueryParameter("token_hash");
+                if (tokenHash != null && !tokenHash.isEmpty()) {
+                    handleInviteLink(tokenHash);
+                }
+            }
+        }
+    }
+
+    private void handleInviteLink(String tokenHash) {
+        Log.d("MainActivity", "Handling invite link with token: " + tokenHash);
+
+        // Show password setup dialog directly without verifying first
+        runOnUiThread(() -> {
+            Log.d("MainActivity", "Creating password setup dialog");
+            if (passwordSetupDialog != null && passwordSetupDialog.isShowing()) {
+                passwordSetupDialog.dismiss();
+            }
+            // Pass null for userId and email since we don't verify anymore
+            passwordSetupDialog = new PasswordSetupDialog(MainActivity.this, tokenHash, null, null, new PasswordSetupDialog.PasswordSetupCallback() {
+                @Override
+                public void onPasswordSetupSuccess() {
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this, "Password set successfully! Please login.", Toast.LENGTH_SHORT).show();
+                        showLoginDialog();
+                    });
+                }
+
+                @Override
+                public void onPasswordSetupError(String errorMessage) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+                    });
+                }
+            });
+            Log.d("MainActivity", "Showing password setup dialog");
+            passwordSetupDialog.show();
+        });
     }
 
     public void navigateToProfile() {

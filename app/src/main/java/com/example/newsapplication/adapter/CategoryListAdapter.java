@@ -74,7 +74,8 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
     @Override
     public void onBindViewHolder(@NonNull CategoryViewHolder holder, int position) {
         Category category = categories.get(position);
-        holder.bind(category, listener, position);
+        boolean isLastItem = position == categories.size() - 1;
+        holder.bind(category, listener, position, isLastItem);
     }
 
     @Override
@@ -91,17 +92,20 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
         private final TextView nameTextView;
         private final TextView descriptionTextView;
         private final ImageView arrowIcon;
+        private final View dividerView;
 
         public CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
             nameTextView = itemView.findViewById(R.id.categoryNameTextView);
             descriptionTextView = itemView.findViewById(R.id.categoryDescriptionTextView);
             arrowIcon = itemView.findViewById(R.id.arrowIcon);
+            // Find the divider - it's the last child in the CardView
+            dividerView = ((android.view.ViewGroup) itemView).getChildAt(1);
         }
 
-        public void bind(Category category, OnCategoryClickListener listener, int position) {
+        public void bind(Category category, OnCategoryClickListener listener, int position, boolean isLastItem) {
             nameTextView.setText(category.getName());
-            
+
             // Show description if available, otherwise show default text
             String description = category.getDescription();
             if (description != null && !description.isEmpty() && !description.equals("null")) {
@@ -109,7 +113,12 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
             } else {
                 descriptionTextView.setText("Browse " + category.getName().toLowerCase() + " articles");
             }
-            
+
+            // Hide divider for last item
+            if (dividerView != null) {
+                dividerView.setVisibility(isLastItem ? View.GONE : View.VISIBLE);
+            }
+
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onCategoryClick(category, position);

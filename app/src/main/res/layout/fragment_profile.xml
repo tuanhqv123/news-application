@@ -226,7 +226,7 @@
                 android:orientation="horizontal"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="12dp">
 
                 <TextView
                     android:layout_width="0dp"
@@ -252,15 +252,7 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- Admin Panel Header -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Admin Panel"
-                    android:textColor="#F39E3A"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                <!-- Admin menu items will be shown without header -->
 
                 <!-- Manage Users -->
                 <LinearLayout

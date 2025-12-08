@@ -113,15 +113,19 @@ public class AuthService {
     }
 
     public void logout(AuthResultCallback callback) {
-        // Get current FCM token before logout
+        android.util.Log.d("AuthService", "Starting logout process");
+
+        // Get current FCM token before logout with timeout
         com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
                 .addOnCompleteListener(task -> {
                     final String fcmToken = task.isSuccessful() && task.getResult() != null ? task.getResult() : null;
+                    android.util.Log.d("AuthService", "FCM token retrieved: " + (fcmToken != null ? "success" : "failed"));
 
                     // Logout API call with optional fcm_token
                     authEndpoints.logout(fcmToken, new ApiClient.ApiCallback<JSONObject>() {
                         @Override
                         public void onSuccess(ApiResponse<JSONObject> response) {
+                            android.util.Log.d("AuthService", "Logout API call successful");
                             sessionManager.logoutUser();
                             apiClient.clearAuthToken();
 
@@ -136,6 +140,8 @@ public class AuthService {
 
                         @Override
                         public void onError(ApiResponse<JSONObject> error) {
+                            android.util.Log.e("AuthService", "Logout API call failed: " + error.getErrorMessage());
+                            // Force logout even if API fails
                             sessionManager.logoutUser();
                             apiClient.clearAuthToken();
 
@@ -145,6 +151,28 @@ public class AuthService {
                                     .resetTokenToGuest(fcmToken);
                             }
 
+                            callback.onSuccess(null);
+                        }
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("AuthService", "Failed to get FCM token: " + e.getMessage());
+                    // Proceed with logout without FCM token
+                    authEndpoints.logout(null, new ApiClient.ApiCallback<JSONObject>() {
+                        @Override
+                        public void onSuccess(ApiResponse<JSONObject> response) {
+                            android.util.Log.d("AuthService", "Logout API call successful (without FCM)");
+                            sessionManager.logoutUser();
+                            apiClient.clearAuthToken();
+                            callback.onSuccess(response.getData());
+                        }
+
+                        @Override
+                        public void onError(ApiResponse<JSONObject> error) {
+                            android.util.Log.e("AuthService", "Logout API call failed: " + error.getErrorMessage());
+                            // Force logout even if API fails
+                            sessionManager.logoutUser();
+                            apiClient.clearAuthToken();
                             callback.onSuccess(null);
                         }
                     });
@@ -199,10 +227,12 @@ public class AuthService {
     public void refreshToken(AuthResultCallback callback) {
         String refreshToken = sessionManager.getRefreshToken();
         if (refreshToken == null) {
+            android.util.Log.d("AuthService", "No refresh token available");
             callback.onError("No refresh token");
             return;
         }
 
+        android.util.Log.d("AuthService", "Attempting to refresh token");
         authEndpoints.refreshToken(refreshToken, new ApiClient.ApiCallback<JSONObject>() {
             @Override
             public void onSuccess(ApiResponse<JSONObject> response) {
@@ -213,6 +243,8 @@ public class AuthService {
                         String newToken = responseData.getString("access_token");
                         String newRefreshToken = responseData.optString("refresh_token", refreshToken);
 
+                        android.util.Log.d("AuthService", "Token refresh successful");
+
                         // Update stored tokens
                         apiClient.setAuthToken(newToken);
                         sessionManager.setAuthToken(newToken);
@@ -220,18 +252,37 @@ public class AuthService {
 
                         callback.onSuccess(responseData);
                     } else {
-                        callback.onError(data != null ? data.toString() : "");
+                        android.util.Log.e("AuthService", "Invalid response format in token refresh");
+                        // Clear tokens on invalid response
+                        sessionManager.logoutUser();
+                        apiClient.clearAuthToken();
+                        callback.onError(data != null ? data.toString() : "Invalid response");
                     }
                 } catch (Exception e) {
+                    android.util.Log.e("AuthService", "Error parsing refresh token response", e);
+                    // Clear tokens on parse error
+                    sessionManager.logoutUser();
+                    apiClient.clearAuthToken();
                     callback.onError(e.getMessage());
                 }
             }
 
             @Override
             public void onError(ApiResponse<JSONObject> error) {
-                sessionManager.logoutUser();
-                apiClient.clearAuthToken();
-                callback.onError(error.getErrorMessage());
+                android.util.Log.e("AuthService", "Refresh token API failed with status " + error.getStatusCode() + ": " + error.getErrorMessage());
+
+                // If it's a 401, clear tokens and don't retry
+                if (error.getStatusCode() == 401) {
+                    android.util.Log.d("AuthService", "Refresh token is invalid/expired, clearing session");
+                    sessionManager.logoutUser();
+                    apiClient.clearAuthToken();
+                    callback.onError("Session expired. Please log in again.");
+                } else {
+                    // For other errors, also clear tokens to prevent loops
+                    sessionManager.logoutUser();
+                    apiClient.clearAuthToken();
+                    callback.onError(error.getErrorMessage());
+                }
             }
         });
     }

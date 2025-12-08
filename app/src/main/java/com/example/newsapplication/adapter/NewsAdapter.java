@@ -12,7 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.newsapplication.R;
 import com.example.newsapplication.model.Article;
 import com.example.newsapplication.utils.DateUtils;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder> {
     private List<Article> articles;
@@ -56,18 +60,41 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             holder.categoryTextView.setText(article.getCategory());
         }
         
-        // Set date only (no category, no dot separator)
-        if (holder.categoryDateTextView != null) {
+        // Set channel name and date
+        if (holder.channelNameTextView != null && holder.categoryDateTextView != null) {
+            String channelName = article.getChannelName();
             String dateStr = article.getDate();
-            String formattedDate = "";
-            if (dateStr != null && !dateStr.isEmpty()) {
-                formattedDate = DateUtils.formatToShortMonthDay(dateStr);
-                if (formattedDate.isEmpty()) {
-                    formattedDate = dateStr;
+            String publishedAt = article.getPublishedAt();
+
+            // Use publishedAt if available, otherwise use date
+            if (publishedAt == null || publishedAt.isEmpty()) {
+                publishedAt = dateStr;
+            }
+
+            String formattedDate = formatDate(publishedAt);
+
+            if (channelName != null && !channelName.isEmpty() && !channelName.equals("null")) {
+                // Show channel name and date
+                holder.channelNameTextView.setText(channelName);
+                holder.channelNameTextView.setVisibility(View.VISIBLE);
+
+                if (!formattedDate.isEmpty()) {
+                    holder.categoryDateTextView.setText(formattedDate);
+                    holder.categoryDateTextView.setVisibility(View.VISIBLE);
+                } else {
+                    holder.categoryDateTextView.setVisibility(View.GONE);
+                }
+            } else {
+                // Only show date if no channel name
+                holder.channelNameTextView.setVisibility(View.GONE);
+
+                if (!formattedDate.isEmpty()) {
+                    holder.categoryDateTextView.setText(formattedDate);
+                    holder.categoryDateTextView.setVisibility(View.VISIBLE);
+                } else {
+                    holder.categoryDateTextView.setVisibility(View.GONE);
                 }
             }
-            
-            holder.categoryDateTextView.setText(formattedDate);
         }
         
         // Hide source and date (using combined field instead)
@@ -123,6 +150,16 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         notifyDataSetChanged();
     }
 
+    // Format date to Month DD, YYYY (e.g., "Dec 8, 2024")
+    private static String formatDate(String isoDate) {
+        if (isoDate == null || isoDate.isEmpty()) {
+            return "";
+        }
+
+        // Use the DateUtils formatToFullDate method which already formats as "Dec 8, 2024"
+        return DateUtils.formatToFullDate(isoDate);
+    }
+
     public static class NewsViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         TextView titleTextView;
@@ -131,6 +168,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
         TextView categoryTextView;
         TextView summaryTextView;
         TextView categoryDateTextView;
+        TextView channelNameTextView;
 
         public NewsViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -141,6 +179,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
             categoryTextView = itemView.findViewById(R.id.categoryTextView);
             summaryTextView = itemView.findViewById(R.id.summaryTextView);
             categoryDateTextView = itemView.findViewById(R.id.categoryDateTextView);
+            channelNameTextView = itemView.findViewById(R.id.channelNameTextView);
         }
     }
 }

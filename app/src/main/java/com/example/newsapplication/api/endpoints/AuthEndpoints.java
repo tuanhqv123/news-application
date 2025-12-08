@@ -44,16 +44,21 @@ public class AuthEndpoints {
 
     public void logout(String fcmToken, ApiClient.ApiCallback<JSONObject> callback) {
         String endpoint = ApiConfig.API_VERSION + "/auth/logout";
+        android.util.Log.d("AuthEndpoints", "Making logout request to: " + endpoint);
         JSONObject requestBody = null;
 
         if (fcmToken != null && !fcmToken.isEmpty()) {
             requestBody = new JSONObject();
             try {
                 requestBody.put("fcm_token", fcmToken);
+                android.util.Log.d("AuthEndpoints", "Logout request includes FCM token");
             } catch (JSONException e) {
+                android.util.Log.e("AuthEndpoints", "Failed to create logout request: " + e.getMessage());
                 callback.onError(ApiResponse.error(e.getMessage(), 0));
                 return;
             }
+        } else {
+            android.util.Log.d("AuthEndpoints", "Logout request without FCM token");
         }
 
         apiClient.post(endpoint, requestBody, callback);
@@ -152,5 +157,40 @@ public class AuthEndpoints {
     public void refreshToken(String refreshToken, ApiClient.ApiCallback<JSONObject> callback) {
         String endpoint = ApiConfig.API_VERSION + "/auth/refresh?refresh_token=" + refreshToken;
         apiClient.post(endpoint, null, callback);
+    }
+
+    public void verifyInvite(String tokenHash, ApiClient.ApiCallback<JSONObject> callback) {
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("token_hash", tokenHash);
+        } catch (JSONException e) {
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
+            return;
+        }
+        apiClient.post(ApiConfig.API_VERSION + "/auth/verify-invite", requestBody, callback);
+    }
+
+    public void setupPassword(String password, String tokenHash, String userId, ApiClient.ApiCallback<JSONObject> callback) {
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("password", password);
+            requestBody.put("token_hash", tokenHash);
+            // userId is optional and might be null in the simplified flow
+            if (userId != null) {
+                requestBody.put("user_id", userId);
+            }
+        } catch (JSONException e) {
+            callback.onError(ApiResponse.error(e.getMessage(), 0));
+            return;
+        }
+        String endpoint = ApiConfig.API_VERSION + "/auth/setup-password";
+        android.util.Log.d("AuthEndpoints", "Making setup password request to: " + endpoint);
+        android.util.Log.d("AuthEndpoints", "Request body: " + requestBody.toString());
+        apiClient.post(endpoint, requestBody, callback);
+    }
+
+    // Overload for simplified flow without userId
+    public void setupPassword(String password, String tokenHash, ApiClient.ApiCallback<JSONObject> callback) {
+        setupPassword(password, tokenHash, null, callback);
     }
 }

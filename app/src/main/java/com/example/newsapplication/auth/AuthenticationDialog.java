@@ -35,7 +35,6 @@ public class AuthenticationDialog extends Dialog {
     // Login views
     private TextInputEditText loginEmailEditText;
     private TextInputEditText loginPasswordEditText;
-    private TextView forgotPasswordText;
     private TextView signupLinkText;
     private Button loginButton;
     private View googleLoginButton;
@@ -74,7 +73,6 @@ public class AuthenticationDialog extends Dialog {
         closeButton = findViewById(R.id.closeButton);
         loginEmailEditText = findViewById(R.id.emailEditText);
         loginPasswordEditText = findViewById(R.id.passwordEditText);
-        forgotPasswordText = findViewById(R.id.forgotPasswordText);
         signupLinkText = findViewById(R.id.signupLinkText);
         loginButton = findViewById(R.id.loginButton);
         googleLoginButton = findViewById(R.id.googleLoginButton);
@@ -103,10 +101,6 @@ public class AuthenticationDialog extends Dialog {
         loginButton.setOnClickListener(v -> attemptLogin());
 
         signupLinkText.setOnClickListener(v -> switchToSignup());
-
-        forgotPasswordText.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Forgot password functionality coming soon!", Toast.LENGTH_SHORT).show();
-        });
 
         googleLoginButton.setOnClickListener(v -> {
             Toast.makeText(getContext(), "Google Sign-In coming soon!", Toast.LENGTH_SHORT).show();

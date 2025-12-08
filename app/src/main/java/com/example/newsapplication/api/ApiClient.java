@@ -19,6 +19,7 @@ public class ApiClient {
     private final Gson gson;
     private final RequestQueue requestQueue;
     private String authToken;
+    private boolean isRefreshing = false;
 
     public ApiClient(Context context) {
         this.context = context;
@@ -70,10 +71,12 @@ public class ApiClient {
             response -> callback.onSuccess(ApiResponse.success(response)),
             error -> {
                 int statusCode = NetworkUtils.getStatusCode(error);
-                
-                // Don't try to refresh token on login/register endpoints or if already retried
-                boolean isAuthEndpoint = endpoint.contains("/auth/login") || endpoint.contains("/auth/register");
-                
+
+                // Don't try to refresh token on login/register/logout endpoints or if already retried
+                boolean isAuthEndpoint = endpoint.contains("/auth/login") ||
+                                      endpoint.contains("/auth/register") ||
+                                      endpoint.contains("/auth/logout");
+
                 if (statusCode == 401 && !isRetry && !isAuthEndpoint && authToken != null) {
                     handleTokenRefresh(method, endpoint, body, callback);
                 } else {
@@ -102,17 +105,32 @@ public class ApiClient {
     }
 
     private void handleTokenRefresh(int method, String endpoint, Object body, ApiCallback<JSONObject> originalCallback) {
+        // Prevent multiple concurrent refresh attempts
+        if (isRefreshing) {
+            originalCallback.onError(ApiResponse.error("Session expired. Please log in again.", 401));
+            return;
+        }
+
+        isRefreshing = true;
         AuthService authService = new AuthService(context);
+        android.util.Log.d("ApiClient", "Attempting to refresh token for endpoint: " + endpoint);
+
         authService.refreshToken(new AuthService.AuthResultCallback() {
             @Override
             public void onSuccess(JSONObject response) {
+                isRefreshing = false;
+                android.util.Log.d("ApiClient", "Token refresh successful");
                 loadAuthToken();
                 makeRequestWithRetry(method, endpoint, body, originalCallback, true);
             }
 
             @Override
             public void onError(String errorMessage) {
-                originalCallback.onError(ApiResponse.error(errorMessage, 401));
+                isRefreshing = false;
+                android.util.Log.e("ApiClient", "Token refresh failed: " + errorMessage);
+                // Clear tokens and force logout
+                clearAuthToken();
+                originalCallback.onError(ApiResponse.error("Session expired. Please log in again.", 401));
             }
         });
     }

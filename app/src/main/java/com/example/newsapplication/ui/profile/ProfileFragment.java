@@ -129,34 +129,25 @@ public class ProfileFragment extends Fragment {
         binding.authButton.setOnClickListener(v -> {
             if (sessionManager.isLoggedIn()) {
                 // Logout logic - use AuthService to properly call API
+                Log.d("ProfileFragment", "Logout button clicked, starting logout process");
                 Toast.makeText(getContext(), "Logging out...", Toast.LENGTH_SHORT).show();
 
                 AuthService authService = new AuthService(getContext());
                 authService.logout(new AuthService.AuthResultCallback() {
                     @Override
                     public void onSuccess(JSONObject response) {
+                        Log.d("ProfileFragment", "Logout successful, navigating to home");
+                        Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
                         // Navigate back to home after successful logout
-                        if (getActivity() instanceof MainActivity) {
-                            MainActivity mainActivity = (MainActivity) getActivity();
-                            // Restart activity to clear navigation state
-                            android.content.Intent intent = new android.content.Intent(getActivity(), MainActivity.class);
-                            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            getActivity().finish();
-                        }
+                        navigateToHomeAndShowLogin();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
+                        Log.e("ProfileFragment", "Logout API error: " + errorMessage);
                         // Still navigate to home even if logout API fails
-                        Toast.makeText(getContext(), "Logout completed", Toast.LENGTH_SHORT).show();
-                        if (getActivity() instanceof MainActivity) {
-                            MainActivity mainActivity = (MainActivity) getActivity();
-                            android.content.Intent intent = new android.content.Intent(getActivity(), MainActivity.class);
-                            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            getActivity().finish();
-                        }
+                        Toast.makeText(getContext(), "Logged out", Toast.LENGTH_SHORT).show();
+                        navigateToHomeAndShowLogin();
                     }
                 });
             } else {
@@ -279,8 +270,20 @@ public class ProfileFragment extends Fragment {
                     showLoggedInState();
                 }
             });
-        
+
         editProfileDialog.show();
+    }
+
+    private void navigateToHomeAndShowLogin() {
+        if (getActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            // Restart activity to clear navigation state and show login dialog
+            android.content.Intent intent = new android.content.Intent(getActivity(), MainActivity.class);
+            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.putExtra("showLogin", true); // Add flag to show login dialog
+            startActivity(intent);
+            getActivity().finish();
+        }
     }
 
     @Override

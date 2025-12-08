@@ -49,9 +49,9 @@
                 android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
+                android:layout_marginBottom="3dp"
                 android:ellipsize="end"
-                android:lineSpacingExtra="2dp"
+                android:lineSpacingExtra="0dp"
                 android:maxLines="2"
                 android:textColor="@color/black"
                 android:textSize="15sp"
@@ -77,14 +77,24 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <!-- Date Only -->
+                <!-- Channel Name -->
                 <TextView
-                    android:id="@+id/categoryDateTextView"
+                    android:id="@+id/channelNameTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/gray"
                     android:textSize="11sp"
-                    tools:text="Dec, 2" />
+                    tools:text="CNN" />
+
+                <!-- Date -->
+                <TextView
+                    android:id="@+id/categoryDateTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="@color/gray"
+                    android:textSize="11sp"
+                    tools:text="Dec 8, 2024" />
 
                 <!-- Status Badge -->
                 <TextView

@@ -120,21 +120,6 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Change Password Link -->
-    <TextView
-        android:id="@+id/changePasswordText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Change Password"
-        android:textColor="#F39E3A"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="28dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:padding="4dp" />
-
     <!-- Save Button -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/saveButton"
