@@ -43,7 +43,7 @@ public class JsonParsingUtils {
             String title = articleJson.optString("title", "Unknown Title");
             String summary = articleJson.optString("summary", "");
             String content = articleJson.optString("content", "");
-            
+
             String source = articleJson.optString("source", "");
             if (source.isEmpty()) {
                 source = articleJson.optString("source_url", "Unknown Source");
@@ -55,7 +55,7 @@ public class JsonParsingUtils {
                     }
                 }
             }
-            
+
             String category = articleJson.optString("category", "");
             if (category.isEmpty()) {
                 int channelId = articleJson.optInt("channel_id", 0);
@@ -65,7 +65,7 @@ public class JsonParsingUtils {
                     category = "General";
                 }
             }
-            
+
             String channelName = "";
             if (articleJson.has("channels") && !articleJson.isNull("channels")) {
                 JSONObject channelObj = articleJson.optJSONObject("channels");
@@ -73,18 +73,73 @@ public class JsonParsingUtils {
                     channelName = channelObj.optString("name", "");
                 }
             }
-            
+
             String author = articleJson.optString("author", "Unknown Author");
             String imageUrl = articleJson.optString("hero_image_url", "");
             String createdAt = articleJson.optString("created_at", "");
             String publishedAt = articleJson.optString("published_at", createdAt);
             String status = articleJson.optString("status", "");
-            
+
             int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
-            
+
             Article article = new Article(id, title, summary, content, author, source, category, imageUrl, imageResId, createdAt, false);
             article.setChannelName(channelName);
             article.setPublishedAt(publishedAt);
+            return article;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Parse single article object from getArticle API response
+     * This is specifically for parsing individual article responses (like from notifications)
+     */
+    public static Article parseSingleArticleResponse(JSONObject articleJson) {
+        try {
+            String id = articleJson.optString("id", "");
+            String title = articleJson.optString("title", "Unknown Title");
+            String summary = articleJson.optString("summary", "");
+            String content = articleJson.optString("content", "");
+
+            // Handle image URL - try hero_image_url first, then image_url
+            String imageUrl = articleJson.optString("hero_image_url", "");
+            if (imageUrl.isEmpty()) {
+                imageUrl = articleJson.optString("image_url", "");
+            }
+
+            // Handle source
+            String source = articleJson.optString("source", "");
+            if (source.isEmpty()) {
+                source = articleJson.optString("source_url", "Unknown Source");
+            }
+
+            // Handle channel info
+            String channelName = articleJson.optString("channel_name", "");
+            if (channelName.isEmpty()) {
+                int channelId = articleJson.optInt("channel_id", 0);
+                if (channelId > 0) {
+                    channelName = "Channel " + channelId;
+                } else {
+                    channelName = source;
+                }
+            }
+
+            String author = articleJson.optString("author", "Unknown Author");
+            String createdAt = articleJson.optString("created_at", "");
+            String publishedAt = articleJson.optString("published_at", createdAt);
+            String status = articleJson.optString("status", "");
+
+            int imageResId = imageUrl.isEmpty() ? R.drawable.placeholder_image : R.drawable.ic_launcher_foreground;
+
+            Article article = new Article(id, title, summary, content, author, source, "", imageUrl, imageResId, createdAt, false);
+            article.setChannelName(channelName);
+            article.setPublishedAt(publishedAt);
+
+            // Set TTS fields if available
+            article.setTtsAudioUrl(articleJson.optString("tts_audio_url", null));
+            article.setTtsDurationSeconds(articleJson.optInt("tts_duration_seconds", 0));
+
             return article;
         } catch (Exception e) {
             return null;

@@ -188,6 +188,9 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
         // Handle deep links
         handleIntent(getIntent());
+
+        // Check for notification data
+        handleNotificationClick();
     }
     
     private void initAudioMiniPlayer() {
@@ -361,7 +364,9 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent); // Important: update the intent for getIntent()
         handleIntent(intent);
+        handleNotificationClick(); // Also handle notification data
     }
 
     private void handleIntent(Intent intent) {
@@ -412,6 +417,50 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             Log.d("MainActivity", "Showing password setup dialog");
             passwordSetupDialog.show();
         });
+    }
+
+    /**
+     * Handle notification click data
+     */
+    private void handleNotificationClick() {
+        String articleId = getIntent().getStringExtra("article_id");
+        String notificationType = getIntent().getStringExtra("notification_type");
+
+        Log.d(TAG, "handleNotificationClick: articleId=" + articleId + ", type=" + notificationType);
+        Log.d(TAG, "Intent extras: " + getIntent().getExtras());
+
+        // Check for both possible type values
+        if (articleId != null && !articleId.isEmpty()) {
+            Log.d(TAG, "Found article_id, opening article: " + articleId);
+            // Delay slightly to ensure MainActivity is fully loaded
+            new Handler().postDelayed(() -> {
+                openArticleFromNotification(articleId);
+            }, 300);
+        } else {
+            Log.d(TAG, "No article_id found in intent");
+        }
+    }
+
+    /**
+     * Open ArticleDetailActivity for notification article
+     */
+    private void openArticleFromNotification(String articleId) {
+        Log.d(TAG, "Opening article from notification: " + articleId);
+
+        try {
+            Intent intent = new Intent(this, ArticleDetailActivity.class);
+            intent.putExtra("article_id", articleId);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            Log.d(TAG, "Starting ArticleDetailActivity with article_id: " + articleId);
+            startActivity(intent);
+
+            // Optional: Show feedback to user
+            Toast.makeText(this, "Opening article...", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening article from notification", e);
+            Toast.makeText(this, "Error opening article", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void navigateToProfile() {

@@ -116,3 +116,4 @@ hs_err_pid*
 
 # MCP configuration files
 .mcp.json
+CLAUDE.md

@@ -42,16 +42,32 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         super.onMessageReceived(remoteMessage);
         Log.d(TAG, "Message received from: " + remoteMessage.getFrom());
 
+        String title = null;
+        String message = null;
+
         // Check if message contains a data payload
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
+
+            // Extract title and message from data if available
+            title = remoteMessage.getData().get("title");
+            message = remoteMessage.getData().get("body");
+
             handleDataMessage(remoteMessage.getData());
         }
 
         // Check if message contains a notification payload
         if (remoteMessage.getNotification() != null) {
             Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
-            handleNotificationMessage(remoteMessage.getNotification());
+
+            // Use notification payload if data doesn't have title/message
+            if (title == null) title = remoteMessage.getNotification().getTitle();
+            if (message == null) message = remoteMessage.getNotification().getBody();
+
+            // Show notification with data from remoteMessage.getData()
+            if (title != null && message != null) {
+                showNotification(title, message, remoteMessage.getData().get("type"), remoteMessage.getData());
+            }
         }
     }
 
@@ -77,42 +93,52 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void handleDataMessage(Map<String, String> data) {
+        Log.d(TAG, "handleDataMessage called with: " + data);
+
         String title = data.get("title");
-        String message = data.get("message");
+        String message = data.get("body"); // Changed from "message" to "body"
         String type = data.get("type");
 
+        Log.d(TAG, "Extracted - title: " + title + ", message: " + message + ", type: " + type);
+
+        // Show notification even if we don't have all data
         if (title != null && message != null) {
             showNotification(title, message, type, data);
+        } else if (title != null) {
+            // Fallback: show notification with just title
+            showNotification(title, "Tap to open article", type, data);
+        } else {
+            Log.w(TAG, "No title found in notification data");
         }
     }
 
-    private void handleNotificationMessage(RemoteMessage.Notification notification) {
-        String title = notification.getTitle();
-        String message = notification.getBody();
-
-        if (title != null && message != null) {
-            showNotification(title, message, null, null);
-        }
-    }
-
-    private void showNotification(String title, String message, String type, Map<String, String> data) {
+  private void showNotification(String title, String message, String type, Map<String, String> data) {
         // Create notification channel for Android 8+
         createNotificationChannel();
 
+        Log.d(TAG, "Creating notification with data: " + data);
+
         // Create intent to open app when notification is tapped
         Intent intent = new Intent(this, MainActivity.class);
-        if (data != null && data.containsKey("article_id")) {
-            intent.putExtra("article_id", data.get("article_id"));
-            intent.putExtra("notification_type", type);
+        if (data != null) {
+            // Add all data fields to intent
+            for (Map.Entry<String, String> entry : data.entrySet()) {
+                intent.putExtra(entry.getKey(), entry.getValue());
+                Log.d(TAG, "Adding extra: " + entry.getKey() + " = " + entry.getValue());
+            }
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 
+        // Use unique request code to avoid issues
+        int requestCode = (int) System.currentTimeMillis();
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this,
-                0,
+                requestCode,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+
+        Log.d(TAG, "Created PendingIntent with requestCode: " + requestCode);
 
         // Build notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -120,8 +146,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentTitle(title)
                 .setContentText(message)
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent);
+                .setPriority(NotificationCompat.PRIORITY_HIGH) // Higher priority for better visibility
+                .setDefaults(NotificationCompat.DEFAULT_ALL) // Use default sound, vibration, lights
+                .setContentIntent(pendingIntent)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message)); // Support long text
 
         // Show notification
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

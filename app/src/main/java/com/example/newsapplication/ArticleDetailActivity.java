@@ -20,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -32,6 +33,7 @@ import com.example.newsapplication.ui.FontSizeDialog;
 import com.example.newsapplication.utils.FontSizeManager;
 import com.example.newsapplication.utils.DateUtils;
 import com.example.newsapplication.repository.NewsRepository;
+import com.example.newsapplication.api.ApiResponse;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.audio.AudioPlayerService;
 import com.example.newsapplication.utils.JsonParsingUtils;
@@ -195,93 +197,108 @@ public class ArticleDetailActivity extends AppCompatActivity {
         // Get article from intent
         if (getIntent().hasExtra("article")) {
             currentArticle = (Article) getIntent().getSerializableExtra("article");
+        } else if (getIntent().hasExtra("article_id")) {
+            // Handle notification click with article_id
+            String articleId = getIntent().getStringExtra("article_id");
+            fetchArticleById(articleId);
+            return; // Exit early, UI will be setup after fetch
+        }
 
-            if (currentArticle != null) {
-                titleTextView.setText(currentArticle.getTitle());
-                
-                // Show channel name and formatted date
-                categoryTextView.setVisibility(View.GONE);
-                
-                // Build source text: "Channel Name • Formatted Date"
-                StringBuilder sourceBuilder = new StringBuilder();
-                String channelName = currentArticle.getChannelName();
-                if (channelName != null && !channelName.isEmpty()) {
-                    sourceBuilder.append(channelName);
-                }
-                
-                // Format and add published date using DateUtils
-                String publishedAt = currentArticle.getPublishedAt();
-                if (publishedAt == null || publishedAt.isEmpty()) {
-                    publishedAt = currentArticle.getDate();
-                }
-                String formattedDate = DateUtils.formatToFullDate(publishedAt);
-                if (!formattedDate.isEmpty()) {
-                    if (sourceBuilder.length() > 0) {
-                        sourceBuilder.append(" • ");
-                    }
-                    sourceBuilder.append(formattedDate);
-                }
-                
-                sourceTextView.setText(sourceBuilder.toString());
-                dateTextView.setVisibility(View.GONE);
-                
-                // Show summary
-                String summary = currentArticle.getDescription();
-                if (summary != null && !summary.isEmpty()) {
-                    summaryTextView.setText(summary);
-                    summaryTextView.setVisibility(View.VISIBLE);
-                } else {
-                    summaryTextView.setVisibility(View.GONE);
-                }
-                
-                // Display content - check if it's HTML
-                String content = currentArticle.getContent();
-                if (content != null && !content.isEmpty()) {
-                    if (isHtmlContent(content)) {
-                        // Use WebView for HTML content
-                        contentWebView.setVisibility(View.VISIBLE);
-                        contentTextView.setVisibility(View.GONE);
-                        loadHtmlContent(content);
-                    } else {
-                        // Use TextView for plain text
-                        contentWebView.setVisibility(View.GONE);
-                        contentTextView.setVisibility(View.VISIBLE);
-                        contentTextView.setText(content);
-                    }
-                }
-
-                // Load article image from URL using Picasso
-                try {
-                    if (currentArticle.getImageUrl() != null && !currentArticle.getImageUrl().isEmpty()) {
-                        com.squareup.picasso.Picasso.get()
-                            .load(currentArticle.getImageUrl())
-                            .noPlaceholder()
-                            .error(R.drawable.placeholder_image)
-                            .fit()
-                            .centerCrop()
-                            .into(articleImageView);
-                    } else {
-                        articleImageView.setImageResource(R.drawable.placeholder_image);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    articleImageView.setImageResource(R.drawable.placeholder_image);
-                }
-
-                // Update bookmark icon
-                updateBookmarkIcon();
-                
-                // Setup audio player if article has ID
-                setupAudioPlayer();
-                
-                // Fetch full article details to get tts_audio_url and tts_duration_seconds
-                if (currentArticle != null && currentArticle.getId() != null && !currentArticle.getId().isEmpty()) {
-                    fetchFullArticleDetails();
-                }
-            }
+        // Continue with existing UI setup logic
+        if (currentArticle != null) {
+            setupArticleUI();
         }
     }
-    
+
+    /**
+     * Setup UI with article data (extracted to avoid infinite loop)
+     */
+    private void setupArticleUI() {
+        if (currentArticle == null) return;
+
+        titleTextView.setText(currentArticle.getTitle());
+
+        // Show channel name and formatted date
+        categoryTextView.setVisibility(View.GONE);
+
+        // Build source text: "Channel Name • Formatted Date"
+        StringBuilder sourceBuilder = new StringBuilder();
+        String channelName = currentArticle.getChannelName();
+        if (channelName != null && !channelName.isEmpty()) {
+            sourceBuilder.append(channelName);
+        }
+
+        // Format and add published date using DateUtils
+        String publishedAt = currentArticle.getPublishedAt();
+        if (publishedAt == null || publishedAt.isEmpty()) {
+            publishedAt = currentArticle.getDate();
+        }
+        String formattedDate = DateUtils.formatToFullDate(publishedAt);
+        if (!formattedDate.isEmpty()) {
+            if (sourceBuilder.length() > 0) {
+                sourceBuilder.append(" • ");
+            }
+            sourceBuilder.append(formattedDate);
+        }
+
+        sourceTextView.setText(sourceBuilder.toString());
+        dateTextView.setVisibility(View.GONE);
+
+        // Show summary
+        String summary = currentArticle.getDescription();
+        if (summary != null && !summary.isEmpty()) {
+            summaryTextView.setText(summary);
+            summaryTextView.setVisibility(View.VISIBLE);
+        } else {
+            summaryTextView.setVisibility(View.GONE);
+        }
+
+        // Display content - check if it's HTML
+        String content = currentArticle.getContent();
+        if (content != null && !content.isEmpty()) {
+            if (isHtmlContent(content)) {
+                // Use WebView for HTML content
+                contentWebView.setVisibility(View.VISIBLE);
+                contentTextView.setVisibility(View.GONE);
+                loadHtmlContent(content);
+            } else {
+                // Use TextView for plain text
+                contentWebView.setVisibility(View.GONE);
+                contentTextView.setVisibility(View.VISIBLE);
+                contentTextView.setText(content);
+            }
+        }
+
+        // Load article image from URL using Picasso
+        try {
+            if (currentArticle.getImageUrl() != null && !currentArticle.getImageUrl().isEmpty()) {
+                com.squareup.picasso.Picasso.get()
+                    .load(currentArticle.getImageUrl())
+                    .noPlaceholder()
+                    .error(R.drawable.placeholder_image)
+                    .fit()
+                    .centerCrop()
+                    .into(articleImageView);
+            } else {
+                articleImageView.setImageResource(R.drawable.placeholder_image);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            articleImageView.setImageResource(R.drawable.placeholder_image);
+        }
+
+        // Update bookmark icon
+        updateBookmarkIcon();
+
+        // Setup audio player if article has ID
+        setupAudioPlayer();
+
+        // Fetch full article details to get tts_audio_url and tts_duration_seconds
+        if (currentArticle.getId() != null && !currentArticle.getId().isEmpty()) {
+            fetchFullArticleDetails();
+        }
+    }
+
     private void fetchFullArticleDetails() {
         newsRepository.getArticle(currentArticle.getId(), new NewsRepository.RepositoryCallback<JSONObject>() {
             @Override
@@ -308,7 +325,70 @@ public class ArticleDetailActivity extends AppCompatActivity {
             }
         });
     }
-    
+
+    /**
+     * Fetch article by ID for notification handling
+     */
+    private void fetchArticleById(String articleId) {
+        Log.d("ArticleDetail", "Fetching article by ID: " + articleId);
+
+        // Show loading state
+        titleTextView.setText("Loading...");
+        sourceTextView.setText("");
+
+        newsRepository.getArticle(articleId, new NewsRepository.RepositoryCallback<JSONObject>() {
+            @Override
+            public void onResult(ApiResponse<JSONObject> response) {
+                if (response.isSuccess() && response.getData() != null) {
+                    try {
+                        // Debug: Log the actual API response
+                        Log.d("ArticleDetail", "API Response: " + response.getData().toString());
+
+                        // Extract article from data.article structure
+                        JSONObject articleJson = response.getData();
+                        if (articleJson.has("data") && articleJson.optJSONObject("data") != null) {
+                            JSONObject dataObj = articleJson.getJSONObject("data");
+                            if (dataObj.has("article")) {
+                                articleJson = dataObj.getJSONObject("article");
+                            }
+                        }
+
+                        // Use JsonParsingUtils utility to parse the article object
+                        Article article = JsonParsingUtils.parseSingleArticleResponse(articleJson);
+                        if (article != null) {
+                            currentArticle = article;
+                            // Call UI setup directly to avoid infinite loop
+                            setupArticleUI();
+                        } else {
+                            showError("Article not found");
+                        }
+                    } catch (Exception e) {
+                        Log.e("ArticleDetail", "Error parsing article", e);
+                        showError("Error loading article");
+                    }
+                } else {
+                    Log.e("ArticleDetail", "Failed to fetch article: " + response.getErrorMessage());
+                    showError("Article not found");
+                }
+            }
+        });
+    }
+
+    /**
+     * Show error message
+     */
+    private void showError(String message) {
+        titleTextView.setText("Error");
+        summaryTextView.setText(message);
+        summaryTextView.setVisibility(View.VISIBLE);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+
+        // Go back after delay
+        new Handler().postDelayed(() -> {
+            finish();
+        }, 3000);
+    }
+
     private void setupAudioPlayer() {
         if (currentArticle == null || currentArticle.getId() == null || currentArticle.getId().isEmpty()) {
             audioPlayImageView.setVisibility(View.GONE);
