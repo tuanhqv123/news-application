@@ -52,6 +52,10 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
         <activity
+            android:name=".ui.notifications.NotificationHistoryActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        <activity
             android:name=".CreateArticleActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />

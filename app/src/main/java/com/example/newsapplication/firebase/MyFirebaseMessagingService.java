@@ -16,6 +16,7 @@ import com.example.newsapplication.R;
 import com.example.newsapplication.api.ApiClient;
 import com.example.newsapplication.api.endpoints.NotificationEndpoints;
 import com.example.newsapplication.auth.UserSessionManager;
+import com.example.newsapplication.database.NotificationHistoryHelper;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -45,29 +46,22 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String title = null;
         String message = null;
 
+        // Get notification payload first (if available)
+        String notificationTitle = null;
+        String notificationMessage = null;
+        if (remoteMessage.getNotification() != null) {
+            notificationTitle = remoteMessage.getNotification().getTitle();
+            notificationMessage = remoteMessage.getNotification().getBody();
+            Log.d(TAG, "Notification payload - Title: " + notificationTitle + ", Message: " + notificationMessage);
+        }
+
         // Check if message contains a data payload
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
-
-            // Extract title and message from data if available
-            title = remoteMessage.getData().get("title");
-            message = remoteMessage.getData().get("body");
-
-            handleDataMessage(remoteMessage.getData());
-        }
-
-        // Check if message contains a notification payload
-        if (remoteMessage.getNotification() != null) {
-            Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
-
-            // Use notification payload if data doesn't have title/message
-            if (title == null) title = remoteMessage.getNotification().getTitle();
-            if (message == null) message = remoteMessage.getNotification().getBody();
-
-            // Show notification with data from remoteMessage.getData()
-            if (title != null && message != null) {
-                showNotification(title, message, remoteMessage.getData().get("type"), remoteMessage.getData());
-            }
+            handleDataMessage(remoteMessage.getData(), notificationTitle, notificationMessage);
+        } else if (notificationTitle != null && notificationMessage != null) {
+            // Only notification payload, no data - still show it
+            showNotification(notificationTitle, notificationMessage, null, null);
         }
     }
 
@@ -92,14 +86,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         });
     }
 
-    private void handleDataMessage(Map<String, String> data) {
+    private void handleDataMessage(Map<String, String> data, String notificationTitle, String notificationMessage) {
         Log.d(TAG, "handleDataMessage called with: " + data);
 
-        String title = data.get("title");
-        String message = data.get("body"); // Changed from "message" to "body"
+        // Use notification title/message as primary, fallback to data
+        String title = notificationTitle != null ? notificationTitle : data.get("title");
+        String message = notificationMessage != null ? notificationMessage : data.get("body");
         String type = data.get("type");
+        String articleId = data.get("article_id");
+        String channelId = data.get("channel_id");
+        String screen = data.get("screen");
 
         Log.d(TAG, "Extracted - title: " + title + ", message: " + message + ", type: " + type);
+
+        // Save notification to local database with the actual notification title/message
+        saveNotificationToHistory(articleId, title, message, type, channelId, screen, data.toString());
 
         // Show notification even if we don't have all data
         if (title != null && message != null) {
@@ -174,6 +175,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private int getNotificationId() {
         return (int) System.currentTimeMillis();
+    }
+
+    private void saveNotificationToHistory(String articleId, String title, String message,
+                                       String type, String channelId, String screen, String data) {
+        try {
+            NotificationHistoryHelper dbHelper = NotificationHistoryHelper.getInstance(this);
+            dbHelper.saveNotification(articleId, title, message, type, channelId, screen, data);
+            Log.d(TAG, "Notification saved to history: " + title);
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving notification to history", e);
+        }
     }
 
     private String getUserId() {

@@ -31,6 +31,8 @@ import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
 import com.example.newsapplication.repository.NewsRepository;
 import com.example.newsapplication.utils.CircleTransform;
+import com.example.newsapplication.ui.notifications.NotificationHistoryActivity;
+import com.example.newsapplication.database.NotificationHistoryHelper;
 import com.squareup.picasso.Picasso;
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -228,7 +230,15 @@ public class HomeFragment extends Fragment {
 
         // Notification icon click
         binding.notificationIcon.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Notifications clicked", Toast.LENGTH_SHORT).show();
+            // Check if user is logged in
+            UserSessionManager sessionManager = new UserSessionManager(requireContext());
+            if (!sessionManager.isLoggedIn()) {
+                Toast.makeText(getContext(), "Please login to view notifications", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Intent intent = new Intent(getContext(), NotificationHistoryActivity.class);
+            startActivity(intent);
         });
     }
 
