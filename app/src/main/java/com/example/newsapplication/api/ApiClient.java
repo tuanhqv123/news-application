@@ -28,6 +28,15 @@ public class ApiClient {
         loadAuthToken();
     }
 
+    public static void initialize(Context context, String authToken) {
+        android.util.Log.d("ApiClient", "Initializing ApiClient with auth token");
+
+        PreferenceUtils.putString(context, ApiConfig.PREFS_NAME, ApiConfig.TOKEN_KEY, authToken);
+        new UserSessionManager(context).setAuthToken(authToken);
+
+        android.util.Log.d("ApiClient", "Auth token saved successfully");
+    }
+
     public void setAuthToken(String token) {
         this.authToken = token;
         PreferenceUtils.putString(context, ApiConfig.PREFS_NAME, ApiConfig.TOKEN_KEY, token);
@@ -113,9 +122,13 @@ public class ApiClient {
 
         isRefreshing = true;
         AuthService authService = new AuthService(context);
+        UserSessionManager sessionManager = new UserSessionManager(context);
+        String refreshToken = sessionManager.getRefreshToken();
+
         android.util.Log.d("ApiClient", "Attempting to refresh token for endpoint: " + endpoint);
 
-        authService.refreshToken(new AuthService.AuthResultCallback() {
+        // Truyền refreshToken vào parameter đầu tiên
+        authService.refreshToken(refreshToken, new AuthService.AuthResultCallback() {
             @Override
             public void onSuccess(JSONObject response) {
                 isRefreshing = false;
@@ -134,6 +147,7 @@ public class ApiClient {
             }
         });
     }
+
 
     private Map<String, String> getDefaultHeaders() {
         Map<String, String> headers = new HashMap<>();

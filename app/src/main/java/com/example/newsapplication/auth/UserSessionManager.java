@@ -12,6 +12,8 @@ public class UserSessionManager {
     private static final String KEY_USER_ROLE = "userRole";
     private static final String KEY_AUTH_TOKEN = "authToken";
     private static final String KEY_REFRESH_TOKEN = "refreshToken";
+    private static final String KEY_AVATAR_URL = "avatarUrl";
+    private static final String KEY_USER_ID = "userId";
 
     private SharedPreferences prefs;
     private SharedPreferences.Editor editor;
@@ -106,8 +108,6 @@ public class UserSessionManager {
         editor.apply();
     }
 
-    private static final String KEY_AVATAR_URL = "avatarUrl";
-
     public String getAvatarUrl() {
         String avatarUrl = prefs.getString(KEY_AVATAR_URL, null);
         android.util.Log.d("UserSessionManager", "getAvatarUrl() returning: " + avatarUrl);
@@ -118,5 +118,51 @@ public class UserSessionManager {
         android.util.Log.d("UserSessionManager", "setAvatarUrl() called with: " + avatarUrl);
         editor.putString(KEY_AVATAR_URL, avatarUrl);
         editor.apply();
+    }
+
+    // ============================================
+    // ✅ THÊM CÁC METHODS MỚI BÊN DƯỚI
+    // ============================================
+
+    /**
+     * Get user ID
+     */
+    public String getUserId() {
+        return prefs.getString(KEY_USER_ID, "");
+    }
+
+    /**
+     * Save user information (for Google Sign-In compatibility)
+     */
+    public void saveUserInfo(String userId, String email, String displayName, String avatarUrl, String role) {
+        editor.putString(KEY_USER_ID, userId);
+        editor.putString(KEY_USER_EMAIL, email);
+        editor.putString(KEY_USER_NAME, displayName);
+        editor.putString(KEY_AVATAR_URL, avatarUrl);
+        editor.putString(KEY_USER_ROLE, role);
+        editor.putBoolean(KEY_IS_LOGGED_IN, true);
+        editor.apply();
+
+        android.util.Log.d("UserSessionManager", "User info saved - Email: " + email + ", Role: " + role);
+    }
+
+    /**
+     * Save complete user session (for Google Sign-In and other auth methods)
+     */
+    public void saveUserSession(int userId, String email, String fullName,
+                                String avatarUrl, String accessToken, String refreshToken) {
+        saveUserInfo(String.valueOf(userId), email, fullName, avatarUrl, "reader");
+        setAuthToken(accessToken);
+        setRefreshToken(refreshToken);
+
+        android.util.Log.d("UserSessionManager", "Complete user session saved - UserID: " + userId);
+    }
+
+    /**
+     * Clear session (alias for logoutUser)
+     */
+    public void clearSession() {
+        logoutUser();
+        android.util.Log.d("UserSessionManager", "Session cleared");
     }
 }

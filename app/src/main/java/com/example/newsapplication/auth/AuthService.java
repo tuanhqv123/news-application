@@ -1,17 +1,25 @@
 package com.example.newsapplication.auth;
 
 import android.content.Context;
+import android.util.Log;
+
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.newsapplication.api.ApiClient;
-import com.example.newsapplication.api.ApiResponse;
-import com.example.newsapplication.api.endpoints.AuthEndpoints;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class AuthService {
+    private static final String TAG = "AuthService";
+    private static final String API_BASE_URL = "http://10.0.2.2:8000/api/v1";
+
     private final Context context;
+    private final RequestQueue requestQueue;
     private final UserSessionManager sessionManager;
-    private final ApiClient apiClient;
-    private final AuthEndpoints authEndpoints;
 
     public interface AuthResultCallback {
         void onSuccess(JSONObject response);
@@ -20,309 +28,209 @@ public class AuthService {
 
     public AuthService(Context context) {
         this.context = context;
+        this.requestQueue = Volley.newRequestQueue(context);
         this.sessionManager = new UserSessionManager(context);
-        this.apiClient = new ApiClient(context);
-        this.authEndpoints = new AuthEndpoints(apiClient);
+    }
+
+    public void loginWithGoogle(String idToken, String nonce, AuthResultCallback callback) {
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("id_token", idToken);
+            if (nonce != null) {
+                requestBody.put("nonce", nonce);
+            }
+
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    API_BASE_URL + "/auth/google",
+                    requestBody,
+                    response -> {
+                        try {
+                            handleAuthResponse(response);
+                            callback.onSuccess(response);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing Google login response", e);
+                            callback.onError("Invalid response format");
+                        }
+                    },
+                    error -> callback.onError(parseVolleyError(error))
+            );
+
+            request.setRetryPolicy(new DefaultRetryPolicy(15000, 0, 1.0f));
+            requestQueue.add(request);
+
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating Google login request", e);
+            callback.onError("Failed to create request");
+        }
+    }
+
+    private void handleAuthResponse(JSONObject response) throws JSONException {
+        JSONObject userData = response.getJSONObject("user");
+        JSONObject sessionData = response.getJSONObject("session");
+
+        sessionManager.saveUserInfo(
+                userData.getString("id"),
+                userData.getString("email"),
+                userData.optString("full_name", ""),
+                userData.optString("avatar_url", ""),
+                userData.optString("role", "reader")
+        );
+
+        sessionManager.setAuthToken(sessionData.getString("access_token"));
+        sessionManager.setRefreshToken(sessionData.getString("refresh_token"));
+
+        ApiClient.initialize(context, sessionData.getString("access_token"));
+
+        Log.d(TAG, "Auth successful - User: " + userData.getString("email"));
+    }
+
+    private String parseVolleyError(com.android.volley.VolleyError error) {
+        if (error.networkResponse != null && error.networkResponse.data != null) {
+            try {
+                String responseBody = new String(error.networkResponse.data, "utf-8");
+                JSONObject jsonError = new JSONObject(responseBody);
+
+                if (jsonError.has("detail")) {
+                    return jsonError.getString("detail");
+                } else if (jsonError.has("message")) {
+                    return jsonError.getString("message");
+                }
+            } catch (Exception e) {
+                // Ignore parse error
+            }
+        }
+        return error.getMessage() != null ? error.getMessage() : "Network error occurred";
     }
 
     public void login(String email, String password, AuthResultCallback callback) {
-        authEndpoints.login(email, password, new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(ApiResponse<JSONObject> response) {
-                try {
-                    JSONObject data = response.getData();
-                    
-                    if (data != null && data.has("success") && data.getBoolean("success") && data.has("data")) {
-                        JSONObject responseData = data.getJSONObject("data");
-                        
-                        String token = responseData.getString("access_token");
-                        String refreshToken = responseData.optString("refresh_token", null);
-                        JSONObject userData = responseData.getJSONObject("user");
-                        
-                        String userEmail = userData.optString("email", email);
-                        String displayName = userData.optString("display_name", email.split("@")[0]);
-                        String role = userData.optString("role", "reader");
-                        String avatarUrl = userData.optString("avatar_url", null);
-                        String userId = userData.optString("user_id", userData.optString("id", null));
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("email", email);
+            requestBody.put("password", password);
 
-                        // Debug logging
-                        android.util.Log.d("AuthService", "Login successful - User: " + userEmail);
-                        android.util.Log.d("AuthService", "Avatar URL: " + avatarUrl);
-                        android.util.Log.d("AuthService", "User ID: " + userId);
-
-                        apiClient.setAuthToken(token);
-                        if (refreshToken != null) {
-                            sessionManager.createLoginSession(userEmail, displayName, role, token, refreshToken);
-                        } else {
-                            sessionManager.createLoginSession(userEmail, displayName, role, token);
-                        }
-                        if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                            android.util.Log.d("AuthService", "Saving avatar URL to session: " + avatarUrl);
-                            sessionManager.setAvatarUrl(avatarUrl);
-                        } else {
-                            android.util.Log.w("AuthService", "No avatar URL found in response");
-                        }
-                        // Save user UUID for notifications
-                        if (userId != null && !userId.isEmpty()) {
-                            com.example.newsapplication.notifications.NotificationManager.getInstance(context).saveUserId(userId);
-                        }
-                        
-                        String message = data.optString("message", "Login successful");
-                        
-                        JSONObject responseWithMessage = new JSONObject();
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    API_BASE_URL + "/auth/login",
+                    requestBody,
+                    response -> {
                         try {
-                            responseWithMessage.put("user", userData);
-                            responseWithMessage.put("message", message);
+                            handleAuthResponse(response);
+                            callback.onSuccess(response);
                         } catch (JSONException e) {
+                            callback.onError("Invalid response format");
                         }
-                        
-                        callback.onSuccess(responseWithMessage);
-                    } else if (data != null && data.has("access_token")) {
-                        String token = data.getString("access_token");
-                        apiClient.setAuthToken(token);
-                        sessionManager.createLoginSession(email, email.split("@")[0], "reader", token);
-                        
-                        callback.onSuccess(data);
-                    } else {
-                        callback.onSuccess(data);
-                    }
-                } catch (JSONException e) {
-                    callback.onError(e.getMessage());
-                }
-            }
+                    },
+                    error -> callback.onError(parseVolleyError(error))
+            );
 
-            @Override
-            public void onError(ApiResponse<JSONObject> error) {
-                callback.onError(error.getErrorMessage());
-            }
-        });
+            requestQueue.add(request);
+        } catch (JSONException e) {
+            callback.onError("Failed to create request");
+        }
     }
 
-    public void register(String email, String password, String displayName, AuthResultCallback callback) {
-        authEndpoints.register(email, password, displayName, new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(ApiResponse<JSONObject> response) {
-                callback.onSuccess(response.getData());
-            }
+    public void register(String email, String password, String fullName, AuthResultCallback callback) {
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("email", email);
+            requestBody.put("password", password);
+            requestBody.put("full_name", fullName);
 
-            @Override
-            public void onError(ApiResponse<JSONObject> error) {
-                callback.onError(error.getErrorMessage());
-            }
-        });
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    API_BASE_URL + "/auth/register",
+                    requestBody,
+                    response -> {
+                        try {
+                            handleAuthResponse(response);
+                            callback.onSuccess(response);
+                        } catch (JSONException e) {
+                            callback.onError("Invalid response format");
+                        }
+                    },
+                    error -> callback.onError(parseVolleyError(error))
+            );
+
+            requestQueue.add(request);
+        } catch (JSONException e) {
+            callback.onError("Failed to create request");
+        }
+    }
+
+    public void refreshToken(String refreshToken, AuthResultCallback callback) {
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("refresh_token", refreshToken);
+
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    API_BASE_URL + "/auth/refresh",
+                    requestBody,
+                    response -> {
+                        try {
+                            handleAuthResponse(response);
+                            callback.onSuccess(response);
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing refresh response", e);
+                            callback.onError("Invalid response format");
+                        }
+                    },
+                    error -> callback.onError(parseVolleyError(error))
+            );
+
+            request.setRetryPolicy(new DefaultRetryPolicy(15000, 0, 1.0f));
+            requestQueue.add(request);
+
+        } catch (JSONException e) {
+            callback.onError("Failed to refresh token");
+        }
     }
 
     public void logout(AuthResultCallback callback) {
-        android.util.Log.d("AuthService", "Starting logout process");
+        String authToken = sessionManager.getAuthToken();
 
-        // Get current FCM token before logout with timeout
-        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(task -> {
-                    final String fcmToken = task.isSuccessful() && task.getResult() != null ? task.getResult() : null;
-                    android.util.Log.d("AuthService", "FCM token retrieved: " + (fcmToken != null ? "success" : "failed"));
+        try {
+            JSONObject requestBody = new JSONObject();
 
-                    // Logout API call with optional fcm_token
-                    authEndpoints.logout(fcmToken, new ApiClient.ApiCallback<JSONObject>() {
-                        @Override
-                        public void onSuccess(ApiResponse<JSONObject> response) {
-                            android.util.Log.d("AuthService", "Logout API call successful");
-                            sessionManager.logoutUser();
-                            apiClient.clearAuthToken();
-
-                            // Reset notification token to guest mode
-                            if (fcmToken != null) {
-                                com.example.newsapplication.notifications.NotificationManager.getInstance(context)
-                                    .resetTokenToGuest(fcmToken);
-                            }
-
-                            callback.onSuccess(response.getData());
-                        }
-
-                        @Override
-                        public void onError(ApiResponse<JSONObject> error) {
-                            android.util.Log.e("AuthService", "Logout API call failed: " + error.getErrorMessage());
-                            // Force logout even if API fails
-                            sessionManager.logoutUser();
-                            apiClient.clearAuthToken();
-
-                            // Still reset token to guest mode even if logout API fails
-                            if (fcmToken != null) {
-                                com.example.newsapplication.notifications.NotificationManager.getInstance(context)
-                                    .resetTokenToGuest(fcmToken);
-                            }
-
-                            callback.onSuccess(null);
-                        }
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    android.util.Log.e("AuthService", "Failed to get FCM token: " + e.getMessage());
-                    // Proceed with logout without FCM token
-                    authEndpoints.logout(null, new ApiClient.ApiCallback<JSONObject>() {
-                        @Override
-                        public void onSuccess(ApiResponse<JSONObject> response) {
-                            android.util.Log.d("AuthService", "Logout API call successful (without FCM)");
-                            sessionManager.logoutUser();
-                            apiClient.clearAuthToken();
-                            callback.onSuccess(response.getData());
-                        }
-
-                        @Override
-                        public void onError(ApiResponse<JSONObject> error) {
-                            android.util.Log.e("AuthService", "Logout API call failed: " + error.getErrorMessage());
-                            // Force logout even if API fails
-                            sessionManager.logoutUser();
-                            apiClient.clearAuthToken();
-                            callback.onSuccess(null);
-                        }
-                    });
-                });
-    }
-
-    public void getCurrentUser(AuthResultCallback callback) {
-        authEndpoints.getMe(new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(ApiResponse<JSONObject> response) {
-                try {
-                    JSONObject data = response.getData();
-                    JSONObject userData = data;
-                    
-                    if (data != null && data.has("success") && data.optBoolean("success", false) && data.has("data")) {
-                        JSONObject responseData = data.getJSONObject("data");
-                        if (responseData.has("user")) {
-                            userData = responseData.getJSONObject("user");
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    API_BASE_URL + "/auth/logout",
+                    requestBody,
+                    response -> {
+                        sessionManager.clearSession();
+                        callback.onSuccess(response);
+                    },
+                    error -> {
+                        sessionManager.clearSession();
+                        try {
+                            callback.onSuccess(new JSONObject());
+                        } catch (Exception e) {
+                            callback.onError("Logout completed");
                         }
                     }
-                    
-                    if (userData != null) {
-                        String email = userData.optString("email", "");
-                        String displayName = userData.optString("display_name", "");
-                        String role = userData.optString("role", "reader");
-                        String avatarUrl = userData.optString("avatar_url", null);
-                        
-                        sessionManager.createLoginSession(email, displayName, role);
-                        if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                            sessionManager.setAvatarUrl(avatarUrl);
-                        }
+            ) {
+                @Override
+                public java.util.Map<String, String> getHeaders() {
+                    java.util.Map<String, String> headers = new java.util.HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    if (authToken != null && !authToken.isEmpty()) {
+                        headers.put("Authorization", "Bearer " + authToken);
                     }
-                    callback.onSuccess(userData);
-                } catch (Exception e) {
-                    callback.onError(e.getMessage());
+                    return headers;
                 }
+            };
+
+            request.setRetryPolicy(new DefaultRetryPolicy(15000, 0, 1.0f));
+            requestQueue.add(request);
+
+        } catch (Exception e) {
+            sessionManager.clearSession();
+            try {
+                callback.onSuccess(new JSONObject());
+            } catch (Exception ex) {
+                callback.onError("Logout completed");
             }
-
-            @Override
-            public void onError(ApiResponse<JSONObject> error) {
-                callback.onError(error.getErrorMessage());
-            }
-        });
-    }
-
-
-
-    public boolean isLoggedIn() {
-        return sessionManager.isLoggedIn();
-    }
-
-    public void refreshToken(AuthResultCallback callback) {
-        String refreshToken = sessionManager.getRefreshToken();
-        if (refreshToken == null) {
-            android.util.Log.d("AuthService", "No refresh token available");
-            callback.onError("No refresh token");
-            return;
         }
-
-        android.util.Log.d("AuthService", "Attempting to refresh token");
-        authEndpoints.refreshToken(refreshToken, new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(ApiResponse<JSONObject> response) {
-                try {
-                    JSONObject data = response.getData();
-                    if (data != null && data.has("success") && data.getBoolean("success") && data.has("data")) {
-                        JSONObject responseData = data.getJSONObject("data");
-                        String newToken = responseData.getString("access_token");
-                        String newRefreshToken = responseData.optString("refresh_token", refreshToken);
-
-                        android.util.Log.d("AuthService", "Token refresh successful");
-
-                        // Update stored tokens
-                        apiClient.setAuthToken(newToken);
-                        sessionManager.setAuthToken(newToken);
-                        sessionManager.setRefreshToken(newRefreshToken);
-
-                        callback.onSuccess(responseData);
-                    } else {
-                        android.util.Log.e("AuthService", "Invalid response format in token refresh");
-                        // Clear tokens on invalid response
-                        sessionManager.logoutUser();
-                        apiClient.clearAuthToken();
-                        callback.onError(data != null ? data.toString() : "Invalid response");
-                    }
-                } catch (Exception e) {
-                    android.util.Log.e("AuthService", "Error parsing refresh token response", e);
-                    // Clear tokens on parse error
-                    sessionManager.logoutUser();
-                    apiClient.clearAuthToken();
-                    callback.onError(e.getMessage());
-                }
-            }
-
-            @Override
-            public void onError(ApiResponse<JSONObject> error) {
-                android.util.Log.e("AuthService", "Refresh token API failed with status " + error.getStatusCode() + ": " + error.getErrorMessage());
-
-                // If it's a 401, clear tokens and don't retry
-                if (error.getStatusCode() == 401) {
-                    android.util.Log.d("AuthService", "Refresh token is invalid/expired, clearing session");
-                    sessionManager.logoutUser();
-                    apiClient.clearAuthToken();
-                    callback.onError("Session expired. Please log in again.");
-                } else {
-                    // For other errors, also clear tokens to prevent loops
-                    sessionManager.logoutUser();
-                    apiClient.clearAuthToken();
-                    callback.onError(error.getErrorMessage());
-                }
-            }
-        });
-    }
-    
-    public void validateToken(AuthResultCallback callback) {
-        if (!sessionManager.isLoggedIn() || sessionManager.getAuthToken() == null) {
-            // Don't validate if not logged in
-            return;
-        }
-        
-        getCurrentUser(new AuthResultCallback() {
-            @Override
-            public void onSuccess(JSONObject response) {
-                callback.onSuccess(response);
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                sessionManager.logoutUser();
-                apiClient.clearAuthToken();
-                callback.onError(errorMessage);
-            }
-        });
-    }
-
-    public void getUserBookmarks(AuthResultCallback callback) {
-        authEndpoints.getMe(new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(ApiResponse<JSONObject> response) {
-                callback.onSuccess(response.getData());
-            }
-
-            @Override
-            public void onError(ApiResponse<JSONObject> error) {
-                callback.onError(error.getErrorMessage());
-            }
-        });
-    }
-
-    public UserSessionManager getSessionManager() {
-        return sessionManager;
     }
 }
