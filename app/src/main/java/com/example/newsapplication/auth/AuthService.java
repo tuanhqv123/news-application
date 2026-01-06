@@ -66,24 +66,54 @@ public class AuthService {
     }
 
     private void handleAuthResponse(JSONObject response) throws JSONException {
-        JSONObject userData = response.getJSONObject("user");
-        JSONObject sessionData = response.getJSONObject("session");
+        // Check if response has "data" field (standard response format)
+        if (response.has("data")) {
+            JSONObject data = response.getJSONObject("data");
+            JSONObject userData = data.getJSONObject("user");
 
-        sessionManager.saveUserInfo(
-                userData.getString("id"),
-                userData.getString("email"),
-                userData.optString("full_name", ""),
-                userData.optString("avatar_url", ""),
-                userData.optString("role", "reader")
-        );
+            String accessToken = data.getString("access_token");
+            String refreshToken = data.getString("refresh_token");
 
-        sessionManager.setAuthToken(sessionData.getString("access_token"));
-        sessionManager.setRefreshToken(sessionData.getString("refresh_token"));
+            sessionManager.saveUserInfo(
+                    userData.getString("id"),
+                    userData.getString("email"),
+                    userData.optString("display_name", ""),
+                    userData.optString("avatar_url", ""),
+                    userData.optString("role", "reader")
+            );
 
-        ApiClient.initialize(context, sessionData.getString("access_token"));
+            sessionManager.setAuthToken(accessToken);
+            sessionManager.setRefreshToken(refreshToken);
 
-        Log.d(TAG, "Auth successful - User: " + userData.getString("email"));
+            ApiClient.initialize(context, accessToken);
+
+            Log.d(TAG, "Auth successful - User: " + userData.getString("email"));
+        }
+        // Handle Google Sign-In response format (different structure)
+        else if (response.has("user") && response.has("session")) {
+            JSONObject userData = response.getJSONObject("user");
+            JSONObject sessionData = response.getJSONObject("session");
+
+            sessionManager.saveUserInfo(
+                    userData.getString("id"),
+                    userData.getString("email"),
+                    userData.optString("full_name", ""),
+                    userData.optString("avatar_url", ""),
+                    userData.optString("role", "reader")
+            );
+
+            sessionManager.setAuthToken(sessionData.getString("access_token"));
+            sessionManager.setRefreshToken(sessionData.getString("refresh_token"));
+
+            ApiClient.initialize(context, sessionData.getString("access_token"));
+
+            Log.d(TAG, "Auth successful - User: " + userData.getString("email"));
+        }
+        else {
+            throw new JSONException("Invalid response format");
+        }
     }
+
 
     private String parseVolleyError(com.android.volley.VolleyError error) {
         if (error.networkResponse != null && error.networkResponse.data != null) {
@@ -109,6 +139,10 @@ public class AuthService {
             requestBody.put("email", email);
             requestBody.put("password", password);
 
+            // ✅ THÊM LOG NÀY
+            Log.d(TAG, "Login request body: " + requestBody.toString());
+            Log.d(TAG, "Login URL: " + API_BASE_URL + "/auth/login");
+
             JsonObjectRequest request = new JsonObjectRequest(
                     Request.Method.POST,
                     API_BASE_URL + "/auth/login",
@@ -121,7 +155,15 @@ public class AuthService {
                             callback.onError("Invalid response format");
                         }
                     },
-                    error -> callback.onError(parseVolleyError(error))
+                    error -> {
+                        // ✅ THÊM LOG NÀY
+                        Log.e(TAG, "Login error status code: " + error.networkResponse.statusCode);
+                        if (error.networkResponse != null && error.networkResponse.data != null) {
+                            String errorBody = new String(error.networkResponse.data);
+                            Log.e(TAG, "Login error body: " + errorBody);
+                        }
+                        callback.onError(parseVolleyError(error));
+                    }
             );
 
             requestQueue.add(request);
@@ -129,34 +171,41 @@ public class AuthService {
             callback.onError("Failed to create request");
         }
     }
+
 
     public void register(String email, String password, String fullName, AuthResultCallback callback) {
         try {
             JSONObject requestBody = new JSONObject();
             requestBody.put("email", email);
             requestBody.put("password", password);
-            requestBody.put("full_name", fullName);
+            requestBody.put("display_name", fullName);
+
+            Log.d(TAG, "Register request: " + requestBody.toString());
 
             JsonObjectRequest request = new JsonObjectRequest(
                     Request.Method.POST,
                     API_BASE_URL + "/auth/register",
                     requestBody,
                     response -> {
-                        try {
-                            handleAuthResponse(response);
-                            callback.onSuccess(response);
-                        } catch (JSONException e) {
-                            callback.onError("Invalid response format");
-                        }
+                        Log.d(TAG, "Registration successful");
+                        callback.onSuccess(response);
                     },
-                    error -> callback.onError(parseVolleyError(error))
+                    error -> {
+                        if (error.networkResponse != null && error.networkResponse.data != null) {
+                            String errorBody = new String(error.networkResponse.data);
+                            Log.e(TAG, "Register error: " + errorBody);
+                        }
+                        callback.onError(parseVolleyError(error));
+                    }
             );
 
             requestQueue.add(request);
         } catch (JSONException e) {
+            Log.e(TAG, "Error creating register request", e);
             callback.onError("Failed to create request");
         }
     }
+
 
     public void refreshToken(String refreshToken, AuthResultCallback callback) {
         try {

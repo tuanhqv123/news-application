@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -194,21 +195,33 @@ public class ArticleDetailActivity extends AppCompatActivity {
     }
 
     private void setupData() {
-        // Get article from intent
+        // ✅ THÊM: Handle deep link intent
+        Intent intent = getIntent();
+        Uri data = intent.getData();
+
+        if (data != null) {
+            // Deep link clicked: newsapp://article/{id} or https://newsapp.example.com/article/{id}
+            String articleId = data.getLastPathSegment();
+            if (articleId != null && !articleId.isEmpty()) {
+                fetchArticleById(articleId);
+                return;
+            }
+        }
+
+        // Existing logic
         if (getIntent().hasExtra("article")) {
             currentArticle = (Article) getIntent().getSerializableExtra("article");
         } else if (getIntent().hasExtra("article_id")) {
-            // Handle notification click with article_id
             String articleId = getIntent().getStringExtra("article_id");
             fetchArticleById(articleId);
-            return; // Exit early, UI will be setup after fetch
+            return;
         }
 
-        // Continue with existing UI setup logic
         if (currentArticle != null) {
             setupArticleUI();
         }
     }
+
 
     /**
      * Setup UI with article data (extracted to avoid infinite loop)
@@ -652,14 +665,11 @@ public class ArticleDetailActivity extends AppCompatActivity {
         });
 
         shareImageView.setOnClickListener(v -> {
-            // Simple share functionality
             if (currentArticle != null) {
-                Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                shareIntent.setType("text/plain");
-                shareIntent.putExtra(Intent.EXTRA_TEXT, currentArticle.getTitle() + " - " + currentArticle.getSource());
-                startActivity(Intent.createChooser(shareIntent, "Share Article"));
+                shareArticle();
             }
         });
+
 
         fontSizeIcon.setOnClickListener(v -> {
             showFontSizeDialog();
@@ -840,6 +850,29 @@ public class ArticleDetailActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void shareArticle() {
+        if (currentArticle == null || currentArticle.getId() == null) {
+            Toast.makeText(this, "Cannot share article", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String articleId = currentArticle.getId();
+        String deepLink = "newsapp://article/" + articleId;
+
+        String shareText = currentArticle.getTitle() + "\n\n" +
+                (currentArticle.getDescription() != null ? currentArticle.getDescription() + "\n\n" : "") +
+                "Tap to open in app: " + deepLink;
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, currentArticle.getTitle());
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+
+        startActivity(Intent.createChooser(shareIntent, "Share Article"));
+    }
+
+
 
     private void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);

@@ -149,7 +149,7 @@ public class AuthenticationDialog extends Dialog {
                 public void onSuccess(JSONObject response) {
                     Toast.makeText(getContext(), "Registration successful! Please check your email.", Toast.LENGTH_LONG).show();
 
-                    // Auto switch to login
+                    // ✅ THÊM: Auto chuyển sang login dialog
                     dismiss();
                     AuthenticationDialog loginDialog = new AuthenticationDialog(getContext(), callback, true);
                     loginDialog.show();
@@ -161,6 +161,7 @@ public class AuthenticationDialog extends Dialog {
                     Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
+
         }
     }
 

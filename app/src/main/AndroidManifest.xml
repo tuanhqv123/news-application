@@ -14,7 +14,7 @@
 
     <!-- For Android 13 (API 33) and above - Notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    
+
     <!-- Storage permissions for image picker -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -30,16 +30,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.NewsApplication"
         android:usesCleartextTraffic="true"
-    >
+        >
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Auth deep link only -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -47,10 +48,26 @@
                 <data android:scheme="newsapp" android:host="auth" android:pathPrefix="/" />
             </intent-filter>
         </activity>
+
+        <!-- ✅ ArticleDetailActivity - THÊM INTENT-FILTER VÀ android:exported="true" -->
         <activity
             android:name=".ArticleDetailActivity"
-            android:exported="false"
-            android:parentActivityName=".MainActivity" />
+            android:exported="true"
+            android:parentActivityName=".MainActivity">
+
+            <!-- ✅ Article Deep Link Handler -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Custom Scheme: newsapp://article/{id} -->
+                <data
+                    android:scheme="newsapp"
+                    android:host="article" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".ui.notifications.NotificationHistoryActivity"
             android:exported="false"
