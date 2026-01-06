@@ -63,24 +63,35 @@ public class HomeFragment extends Fragment {
     private NewsRepository newsRepository;
     
     private String currentTab = "feeds";
+    private int currentPage = 1;
+    private boolean isLoadingMore = false;
+    private boolean hasMoreData = true;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         HomeViewModel homeViewModel =
                 new ViewModelProvider(this).get(HomeViewModel.class);
 
+        //PHẢI INFLATE BINDING TRƯỚC
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
+        // SAU ĐÓ MỚI SETUP VIEWS
         sessionManager = new UserSessionManager(getContext());
         authService = new AuthService(getContext());
         newsRepository = new NewsRepository(getContext());
         followingChannelsList = new ArrayList<>();
-        
+
         setupRecyclerViews();
         setupFollowingSection();
+
+        // Setup load more button (SAU KHI binding đã được inflate)
+        binding.loadMoreButton.setOnClickListener(v -> {
+            loadMoreArticles();
+        });
+
         loadMockNews();
-        
+
         // Update user avatar if logged in
         updateUserInfo();
         setupTabNavigation();
@@ -97,6 +108,7 @@ public class HomeFragment extends Fragment {
 
         return root;
     }
+
 
     private void setupFollowingSection() {
         followingContainer = binding.followingContainer;
@@ -160,6 +172,82 @@ public class HomeFragment extends Fragment {
             }
         });
     }
+
+    private void loadMoreArticles() {
+        if (isLoadingMore || !hasMoreData) {
+            return;
+        }
+
+        isLoadingMore = true;
+        binding.loadMoreButton.setText("Loading...");
+        binding.loadMoreButton.setEnabled(false);
+
+        currentPage++;
+
+        // Load theo tab hiện tại
+        if (currentTab.equals("feeds")) {
+            loadMoreFeedsContent();
+        } else if (currentTab.equals("popular")) {
+            loadMorePopularContent();
+        }
+    }
+
+    private void loadMoreFeedsContent() {
+        newsRepository.getArticles(currentPage, 20, 1, new NewsRepository.RepositoryCallback<JSONObject>() {
+            @Override
+            public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                isLoadingMore = false;
+                binding.loadMoreButton.setText("Load More");
+                binding.loadMoreButton.setEnabled(true);
+
+                if (response.isSuccess() && response.getData() != null) {
+                    List<Article> newArticles = JsonParsingUtils.parseArticles(response.getData());
+
+                    if (newArticles.isEmpty()) {
+                        hasMoreData = false;
+                        binding.loadMoreButton.setVisibility(View.GONE);
+                        Toast.makeText(getContext(), "No more articles", Toast.LENGTH_SHORT).show();
+                    } else {
+                        int startPosition = popularNewsList.size();
+                        popularNewsList.addAll(newArticles);
+                        newsAdapter.notifyItemRangeInserted(startPosition, newArticles.size());
+                    }
+                } else {
+                    currentPage--; // Rollback page if failed
+                    Toast.makeText(getContext(), "Failed to load more", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void loadMorePopularContent() {
+        newsRepository.getArticles(currentPage, 20, null, new NewsRepository.RepositoryCallback<JSONObject>() {
+            @Override
+            public void onResult(com.example.newsapplication.api.ApiResponse<JSONObject> response) {
+                isLoadingMore = false;
+                binding.loadMoreButton.setText("Load More");
+                binding.loadMoreButton.setEnabled(true);
+
+                if (response.isSuccess() && response.getData() != null) {
+                    List<Article> newArticles = JsonParsingUtils.parseArticles(response.getData());
+
+                    if (newArticles.isEmpty()) {
+                        hasMoreData = false;
+                        binding.loadMoreButton.setVisibility(View.GONE);
+                        Toast.makeText(getContext(), "No more articles", Toast.LENGTH_SHORT).show();
+                    } else {
+                        int startPosition = popularNewsList.size();
+                        popularNewsList.addAll(newArticles);
+                        newsAdapter.notifyItemRangeInserted(startPosition, newArticles.size());
+                    }
+                } else {
+                    currentPage--; // Rollback page if failed
+                    Toast.makeText(getContext(), "Failed to load more", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
 
     private void handleBookmarkClick(Article article, int position, NewsAdapter adapter) {
         // Check if user is logged in
@@ -315,46 +403,64 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadFeedsContent() {
+        // Reset pagination
+        currentPage = 1;
+        hasMoreData = true;
+
         // Show feeds content, hide following
         binding.feedsPopularContainer.setVisibility(View.VISIBLE);
         followingContainer.setVisibility(View.GONE);
-        
+
         // Update title
         binding.popularNewsTitle.setText("Latest News");
         binding.popularNewsTitle.setVisibility(View.VISIBLE);
-        
+
+        // Show load more button
+        binding.loadMoreButton.setVisibility(View.VISIBLE);
+
         // Load articles from category_id = 1
         loadArticlesFromCategory(1);
     }
 
     private void loadPopularContent() {
+        // Reset pagination
+        currentPage = 1;
+        hasMoreData = true;
+
         // Show popular content, hide following
         binding.feedsPopularContainer.setVisibility(View.VISIBLE);
         followingContainer.setVisibility(View.GONE);
-        
+
         // Update title
         binding.popularNewsTitle.setText("Popular News");
         binding.popularNewsTitle.setVisibility(View.VISIBLE);
-        
+
+        // Show load more button
+        binding.loadMoreButton.setVisibility(View.VISIBLE);
+
         // Load all articles (no category filter)
         loadArticlesFromAPI();
     }
 
     private void loadFollowingContent() {
+        // Hide load more button for following tab
+        binding.loadMoreButton.setVisibility(View.GONE);
+
         // Show following section, hide feeds/popular
         binding.feedsPopularContainer.setVisibility(View.GONE);
         followingContainer.setVisibility(View.VISIBLE);
-        
+
         if (!sessionManager.isLoggedIn()) {
             noFollowingText.setVisibility(View.VISIBLE);
             noFollowingText.setText("Login to see channels you follow");
             followingChannelsRecyclerView.setVisibility(View.GONE);
             return;
         }
-        
+
         // Load followed channels from API
         loadFollowedChannels();
     }
+
 
     private void navigateToChannelArticles(Channel channel) {
         // Navigate to explore tab and show channel articles
@@ -435,16 +541,23 @@ public class HomeFragment extends Fragment {
     private void loadMockNews() {
         // Load breaking news from category 9
         loadBreakingNews();
-        
-        // Load articles from API
-        loadArticlesFromAPI();
-        
+
+        // ✅ Load content theo tab hiện tại (default: feeds)
+        if (currentTab.equals("feeds")) {
+            loadFeedsContent();
+        } else if (currentTab.equals("popular")) {
+            loadPopularContent();
+        } else if (currentTab.equals("following")) {
+            loadFollowingContent();
+        }
+
         // Load bookmarks if user is logged in
         if (sessionManager.isLoggedIn()) {
             loadBookmarksFromAPI();
         }
     }
-    
+
+
     private void loadBreakingNews() {
         if (newsRepository != null) {
             newsRepository.getArticles(1, 5, 9, new NewsRepository.RepositoryCallback<JSONObject>() {
