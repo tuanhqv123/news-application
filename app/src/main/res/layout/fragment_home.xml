@@ -201,6 +201,24 @@
                         android:nestedScrollingEnabled="false"
                         tools:listitem="@layout/item_news_feed" />
 
+                    <!-- ✅ THÊM NÚT LOAD MORE -->
+                    <Button
+                        android:id="@+id/loadMoreButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="16dp"
+                        android:text="Load More"
+                        android:textColor="#F39E3A"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/load_more_button_background"
+                        android:padding="12dp"
+                        android:visibility="gone" />
+
+
                 </LinearLayout>
 
                 <!-- Following Content (channels user follows) -->
