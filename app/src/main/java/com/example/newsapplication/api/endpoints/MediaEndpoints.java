@@ -76,10 +76,12 @@ public class MediaEndpoints {
                     },
                     error -> {
                         int statusCode = error.networkResponse != null ? error.networkResponse.statusCode : 0;
-                        
+
                         if (statusCode == 401 && !isRetry) {
                             AuthService authService = new AuthService(context);
-                            authService.refreshToken(new AuthService.AuthResultCallback() {
+                            String refreshToken = sessionManager.getRefreshToken();
+
+                            authService.refreshToken(refreshToken, new AuthService.AuthResultCallback() {
                                 @Override
                                 public void onSuccess(JSONObject response) {
                                     uploadFileInternal(fileUri, fileName, callback, true);
@@ -90,7 +92,8 @@ public class MediaEndpoints {
                                     callback.onError(errorMessage);
                                 }
                             });
-                        } else {
+                        }
+                        else {
                             // Extract detail from error response
                             String errorMsg = "";
                             if (error.networkResponse != null && error.networkResponse.data != null) {

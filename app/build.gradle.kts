@@ -40,6 +40,11 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
+
+    // ✅ Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("com.google.android.gms:play-services-base:18.3.0")
+
     // Media support library for NotificationCompat.MediaStyle (music-style notification)
     implementation("androidx.media:media:1.7.0")
     implementation(libs.lifecycle.livedata.ktx)

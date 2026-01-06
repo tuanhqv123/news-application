@@ -193,4 +193,19 @@ public class AuthEndpoints {
     public void setupPassword(String password, String tokenHash, ApiClient.ApiCallback<JSONObject> callback) {
         setupPassword(password, tokenHash, null, callback);
     }
+
+    public void loginWithGoogle(String idToken, String nonce, ApiClient.ApiCallback<JSONObject> callback) {
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("id_token", idToken);
+            requestBody.put("nonce", nonce);
+
+            // QUAN TRỌNG: Thêm API_VERSION prefix giống các endpoint khác
+            apiClient.post(ApiConfig.API_VERSION + "/auth/google", requestBody, callback);
+        } catch (Exception e) {
+            // Sử dụng ApiResponse.error() - static factory method
+            callback.onError(ApiResponse.error("Failed to create request: " + e.getMessage(), 0));
+        }
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.example.newsapplication;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,25 +19,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
+import androidx.fragment.app.Fragment;
 
 import com.example.newsapplication.R;
+import com.example.newsapplication.auth.GoogleAuthHelper;
 import com.example.newsapplication.databinding.ActivityMainBinding;
 import com.example.newsapplication.auth.AuthenticationDialog;
 import com.example.newsapplication.auth.UserSessionManager;
 import com.example.newsapplication.auth.AuthService;
 import com.example.newsapplication.auth.EditProfileDialog;
 import com.example.newsapplication.auth.PasswordSetupDialog;
-import com.example.newsapplication.api.ApiResponse;
-import com.example.newsapplication.api.endpoints.AuthEndpoints;
-import org.json.JSONObject;
 import com.example.newsapplication.audio.AudioPlayerService;
-
-import androidx.fragment.app.Fragment;
-
 import com.example.newsapplication.ui.home.HomeFragment;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 
 import java.util.Locale;
 
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     private boolean isUserSeeking = false;
 
     private static final String TAG = "MainActivity";
-    
+
     // BroadcastReceiver for audio state updates
     private BroadcastReceiver audioStateReceiver = new BroadcastReceiver() {
         @Override
@@ -74,10 +75,10 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
                 if (title == null) {
                     title = "";
                 }
-                
-                Log.d(TAG, "Broadcast received - playing: " + playing + ", position: " + position + 
-                      ", duration: " + duration + ", title: " + title);
-                
+
+                Log.d(TAG, "Broadcast received - playing: " + playing + ", position: " + position +
+                        ", duration: " + duration + ", title: " + title);
+
                 updateAudioMiniBar(playing, position, duration, title);
             }
         }
@@ -92,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // ✅ CHECK GOOGLE PLAY SERVICES FIRST
+        checkGooglePlayServices();
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -108,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         // Request notification permission for Android 13+
         if (Build.VERSION.SDK_INT >= 33) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
@@ -192,7 +196,32 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         // Check for notification data
         handleNotificationClick();
     }
-    
+
+    /**
+     * ✅ CHECK GOOGLE PLAY SERVICES AVAILABILITY
+     */
+    private void checkGooglePlayServices() {
+        GoogleApiAvailability availability = GoogleApiAvailability.getInstance();
+        int resultCode = availability.isGooglePlayServicesAvailable(this);
+
+        if (resultCode != ConnectionResult.SUCCESS) {
+            Log.e(TAG, "❌ Google Play Services not available. Error code: " + resultCode);
+
+            if (availability.isUserResolvableError(resultCode)) {
+                // Show dialog to install/update Google Play Services
+                Log.d(TAG, "Showing Google Play Services error dialog");
+                availability.getErrorDialog(this, resultCode, 9000).show();
+            } else {
+                Log.e(TAG, "This device doesn't support Google Play Services");
+                Toast.makeText(this,
+                        "This device doesn't support Google Sign-In",
+                        Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Log.d(TAG, "✅ Google Play Services is available and up to date");
+        }
+    }
+
     private void initAudioMiniPlayer() {
         audioMiniPlayerBar = binding.audioMiniPlayerBar;
         audioMiniPlayPause = binding.audioMiniPlayPause;
@@ -201,14 +230,14 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         audioMiniSeekBar = binding.audioMiniSeekBar;
         audioMiniDuration = binding.audioMiniDuration;
         audioMiniClose = binding.audioMiniClose;
-        
+
         // Initially hide mini-player
         audioMiniPlayerBar.setVisibility(View.GONE);
-        
+
         // Setup click listeners
         audioMiniPlayPause.setOnClickListener(v -> toggleAudioPlayback());
         audioMiniClose.setOnClickListener(v -> stopAudio());
-        
+
         // Setup seekbar listener
         audioMiniSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -234,83 +263,72 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             }
         });
     }
-    
+
     private void toggleAudioPlayback() {
-        // Always use ACTION_PAUSE because handlePause() can toggle between play and pause
-        // It will resume if paused, or pause if playing
         Intent intent = new Intent(this, AudioPlayerService.class);
         intent.setAction(AudioPlayerService.ACTION_PAUSE);
         startService(intent);
     }
-    
+
     private void stopAudio() {
         Intent intent = new Intent(this, AudioPlayerService.class);
         intent.setAction(AudioPlayerService.ACTION_STOP);
         startService(intent);
         audioMiniPlayerBar.setVisibility(View.GONE);
     }
-    
+
     private void updateAudioMiniBar(boolean playing, int position, int duration, String title) {
-        Log.d(TAG, "updateAudioMiniBar() - playing: " + playing + ", position: " + position + 
-              ", duration: " + duration + ", title: " + title);
-        
-        // Always show mini-player if there's any audio state (playing, paused, or has title)
+        Log.d(TAG, "updateAudioMiniBar() - playing: " + playing + ", position: " + position +
+                ", duration: " + duration + ", title: " + title);
+
         boolean hasTitle = (title != null && !title.isEmpty()) || AudioPlayerService.sCurrentTitle != null;
         boolean shouldShow = playing || duration > 0 || hasTitle || AudioPlayerService.sIsPlaying;
-        
+
         Log.d(TAG, "updateAudioMiniBar() - hasTitle: " + hasTitle + ", shouldShow: " + shouldShow);
-        
+
         if (shouldShow) {
             Log.d(TAG, "updateAudioMiniBar() - Showing mini-player");
-            // Show mini-player
             audioMiniPlayerBar.setVisibility(View.VISIBLE);
-            
-            // Ensure all child views are visible
+
             audioMiniPlayPause.setVisibility(View.VISIBLE);
             audioMiniClose.setVisibility(View.VISIBLE);
             audioMiniTitle.setVisibility(View.VISIBLE);
             audioMiniSeekBar.setVisibility(View.VISIBLE);
             audioMiniCurrentTime.setVisibility(View.VISIBLE);
             audioMiniDuration.setVisibility(View.VISIBLE);
-            
-            // Update title
+
             if (title != null && !title.isEmpty()) {
                 audioMiniTitle.setText(title);
             } else if (AudioPlayerService.sCurrentTitle != null) {
                 audioMiniTitle.setText(AudioPlayerService.sCurrentTitle);
             }
-            
-            // Update play/pause icon based on playing state
+
             audioMiniPlayPause.setImageResource(playing ? R.drawable.ic_pause_circle : R.drawable.ic_play_circle);
             Log.d(TAG, "updateAudioMiniBar() - Set play/pause icon, playing: " + playing);
-            
-            // Update duration and seekbar
+
             if (duration > 0) {
                 if (audioMiniSeekBar.getMax() != duration) {
                     audioMiniSeekBar.setMax(duration);
                 }
                 audioMiniDuration.setText(formatMillis(duration));
             }
-            
-            // Update position
+
             if (!isUserSeeking && position >= 0) {
                 audioMiniSeekBar.setProgress(position);
                 audioMiniCurrentTime.setText(formatMillis(position));
             }
         } else {
             Log.d(TAG, "updateAudioMiniBar() - NOT showing mini-player");
-            // Only hide if truly stopped (no duration, no title, and not playing)
             if (!AudioPlayerService.sIsPlaying && AudioPlayerService.sCurrentTitle == null) {
                 audioMiniPlayerBar.setVisibility(View.GONE);
             }
         }
     }
-    
+
     private boolean mediaPlayerExists() {
-        // Check if service indicates audio exists
         return AudioPlayerService.sIsPlaying || AudioPlayerService.sCurrentTitle != null;
     }
-    
+
     private String formatMillis(int millis) {
         if (millis <= 0) {
             return "00:00";
@@ -323,13 +341,11 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
     private void updateNavigationState(int selectedNav) {
         try {
-            // Reset all navigation items to inactive state (50% opacity)
             setNavigationItemState(binding.homeIcon, binding.homeText, false);
             setNavigationItemState(binding.exploreIcon, binding.exploreText, false);
             setNavigationItemState(binding.savedIcon, binding.savedText, false);
             setNavigationItemState(binding.profileIcon, binding.profileText, false);
 
-            // Set selected item to active state (100% opacity)
             if (selectedNav == NAV_HOME) {
                 setNavigationItemState(binding.homeIcon, binding.homeText, true);
             } else if (selectedNav == NAV_EXPLORE) {
@@ -364,9 +380,9 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        setIntent(intent); // Important: update the intent for getIntent()
+        setIntent(intent);
         handleIntent(intent);
-        handleNotificationClick(); // Also handle notification data
+        handleNotificationClick();
     }
 
     private void handleIntent(Intent intent) {
@@ -375,7 +391,7 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         }
 
         Uri uri = intent.getData();
-        Log.d("MainActivity", "Deep link received: " + uri.toString());
+        Log.d(TAG, "Deep link received: " + uri.toString());
 
         if ("newsapp".equals(uri.getScheme()) && "auth".equals(uri.getHost())) {
             String path = uri.getPath();
@@ -389,15 +405,13 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     }
 
     private void handleInviteLink(String tokenHash) {
-        Log.d("MainActivity", "Handling invite link with token: " + tokenHash);
+        Log.d(TAG, "Handling invite link with token: " + tokenHash);
 
-        // Show password setup dialog directly without verifying first
         runOnUiThread(() -> {
-            Log.d("MainActivity", "Creating password setup dialog");
+            Log.d(TAG, "Creating password setup dialog");
             if (passwordSetupDialog != null && passwordSetupDialog.isShowing()) {
                 passwordSetupDialog.dismiss();
             }
-            // Pass null for userId and email since we don't verify anymore
             passwordSetupDialog = new PasswordSetupDialog(MainActivity.this, tokenHash, null, null, new PasswordSetupDialog.PasswordSetupCallback() {
                 @Override
                 public void onPasswordSetupSuccess() {
@@ -414,14 +428,11 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
                     });
                 }
             });
-            Log.d("MainActivity", "Showing password setup dialog");
+            Log.d(TAG, "Showing password setup dialog");
             passwordSetupDialog.show();
         });
     }
 
-    /**
-     * Handle notification click data
-     */
     private void handleNotificationClick() {
         String articleId = getIntent().getStringExtra("article_id");
         String notificationType = getIntent().getStringExtra("notification_type");
@@ -429,10 +440,8 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         Log.d(TAG, "handleNotificationClick: articleId=" + articleId + ", type=" + notificationType);
         Log.d(TAG, "Intent extras: " + getIntent().getExtras());
 
-        // Check for both possible type values
         if (articleId != null && !articleId.isEmpty()) {
             Log.d(TAG, "Found article_id, opening article: " + articleId);
-            // Delay slightly to ensure MainActivity is fully loaded
             new Handler().postDelayed(() -> {
                 openArticleFromNotification(articleId);
             }, 300);
@@ -441,9 +450,6 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         }
     }
 
-    /**
-     * Open ArticleDetailActivity for notification article
-     */
     private void openArticleFromNotification(String articleId) {
         Log.d(TAG, "Opening article from notification: " + articleId);
 
@@ -455,7 +461,6 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             Log.d(TAG, "Starting ArticleDetailActivity with article_id: " + articleId);
             startActivity(intent);
 
-            // Optional: Show feedback to user
             Toast.makeText(this, "Opening article...", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Log.e(TAG, "Error opening article from notification", e);
@@ -469,7 +474,6 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     }
 
     public void navigateToExploreWithChannel(int channelId, String channelName, boolean isFollowing) {
-        // Navigate to explore and pass channel info
         android.os.Bundle args = new android.os.Bundle();
         args.putInt("channelId", channelId);
         args.putString("channelName", channelName);
@@ -487,7 +491,6 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
 
         Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
 
-        // Update notification token with user ID after successful login
         com.example.newsapplication.notifications.NotificationManager.getInstance(this).onUserLoggedIn();
 
         navController.navigate(R.id.navigation_saved);
@@ -498,16 +501,11 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
     public void onAuthCancelled() {
     }
 
-
-
     private void switchNewsSource() {
-        // Toggle between VnExpress and Tuổi Trẻ
         currentSource = "VnExpress".equals(currentSource) ? "Tuổi Trẻ" : "VnExpress";
 
-        // Show toast message
         Toast.makeText(this, "Switched to " + currentSource, Toast.LENGTH_SHORT).show();
 
-        // Get current fragment and update source
         Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_activity_main);
         if (currentFragment instanceof HomeFragment) {
             ((HomeFragment) currentFragment).switchToSource(currentSource);
@@ -531,16 +529,14 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         Log.d(TAG, "Service is NOT running");
         return false;
     }
-    
+
     private boolean hasActiveNotification() {
-        // Check if there's an active notification from AudioPlayerService
-        // This is another way to detect if service is running
         android.app.NotificationManager notificationManager = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 android.service.notification.StatusBarNotification[] notifications = notificationManager.getActiveNotifications();
                 for (android.service.notification.StatusBarNotification notification : notifications) {
-                    if (notification.getId() == 1) { // AudioPlayerService uses NOTIFICATION_ID = 1
+                    if (notification.getId() == 1) {
                         Log.d(TAG, "Found active notification from AudioPlayerService");
                         return true;
                     }
@@ -551,60 +547,63 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
         }
         return false;
     }
-    
+
+    // ✅ THÊM ANNOTATION NÀY CHO onStart()
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override
     protected void onStart() {
         super.onStart();
         Log.d(TAG, "onStart() called");
+
         // Register broadcast receiver
         IntentFilter filter = new IntentFilter(AudioPlayerService.ACTION_AUDIO_STATE);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(audioStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            ContextCompat.registerReceiver(
+                    this,
+                    audioStateReceiver,
+                    filter,
+                    ContextCompat.RECEIVER_NOT_EXPORTED
+            );
         } else {
             registerReceiver(audioStateReceiver, filter);
         }
-        
-        // Check if audio is already playing or paused and show mini-player immediately
-        // This ensures mini-player shows when back from ArticleDetailActivity
-        // Check both static variables, service status, and notification
+
+
         boolean sIsPlaying = AudioPlayerService.sIsPlaying;
         String sCurrentTitle = AudioPlayerService.sCurrentTitle;
         boolean serviceRunning = isServiceRunning();
         boolean hasNotification = hasActiveNotification();
-        
-        Log.d(TAG, "onStart() - sIsPlaying: " + sIsPlaying + ", sCurrentTitle: " + sCurrentTitle + 
-              ", serviceRunning: " + serviceRunning + ", hasNotification: " + hasNotification);
-        
-        // Show mini-player if ANY indicator shows audio exists
-        boolean hasAudioState = sIsPlaying || 
-                               (sCurrentTitle != null && !sCurrentTitle.isEmpty()) ||
-                               serviceRunning ||
-                               hasNotification;
-        
+
+        Log.d(TAG, "onStart() - sIsPlaying: " + sIsPlaying + ", sCurrentTitle: " + sCurrentTitle +
+                ", serviceRunning: " + serviceRunning + ", hasNotification: " + hasNotification);
+
+        boolean hasAudioState = sIsPlaying ||
+                (sCurrentTitle != null && !sCurrentTitle.isEmpty()) ||
+                serviceRunning ||
+                hasNotification;
+
         Log.d(TAG, "onStart() - hasAudioState: " + hasAudioState);
-        
+
         if (hasAudioState) {
             Log.d(TAG, "onStart() - Showing mini-player");
             audioMiniPlayerBar.setVisibility(View.VISIBLE);
-            
-            // Ensure all child views are visible
+
             if (audioMiniPlayPause != null) audioMiniPlayPause.setVisibility(View.VISIBLE);
             if (audioMiniClose != null) audioMiniClose.setVisibility(View.VISIBLE);
             if (audioMiniTitle != null) audioMiniTitle.setVisibility(View.VISIBLE);
             if (audioMiniSeekBar != null) audioMiniSeekBar.setVisibility(View.VISIBLE);
             if (audioMiniCurrentTime != null) audioMiniCurrentTime.setVisibility(View.VISIBLE);
             if (audioMiniDuration != null) audioMiniDuration.setVisibility(View.VISIBLE);
-            
+
             if (sCurrentTitle != null && !sCurrentTitle.isEmpty()) {
                 audioMiniTitle.setText(sCurrentTitle);
             } else {
-                // If no title but service is running, show placeholder
                 audioMiniTitle.setText("Audio đang phát");
             }
             audioMiniPlayPause.setImageResource(sIsPlaying ? R.drawable.ic_pause_circle : R.drawable.ic_play_circle);
             Log.d(TAG, "onStart() - Set play/pause icon, sIsPlaying: " + sIsPlaying);
-            
-            // Request current state from service immediately
+
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 Log.d(TAG, "onStart() - Requesting state from service");
                 Intent requestIntent = new Intent(MainActivity.this, AudioPlayerService.class);
@@ -616,85 +615,81 @@ public class MainActivity extends AppCompatActivity implements AuthenticationDia
             Log.d(TAG, "onStart() - NOT showing mini-player (no audio state)");
         }
     }
-    
+
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume() called");
-        // Always check when resuming (e.g., when back from another activity)
-        // Show mini-player immediately if audio exists (playing or paused)
-        // This is a backup check in case onStart() didn't catch it
-        // Check both static variables, service status, and notification
+
         boolean sIsPlaying = AudioPlayerService.sIsPlaying;
         String sCurrentTitle = AudioPlayerService.sCurrentTitle;
         boolean serviceRunning = isServiceRunning();
         boolean hasNotification = hasActiveNotification();
-        
-        Log.d(TAG, "onResume() - sIsPlaying: " + sIsPlaying + ", sCurrentTitle: " + sCurrentTitle + 
-              ", serviceRunning: " + serviceRunning + ", hasNotification: " + hasNotification);
-        
-        // Show mini-player if ANY indicator shows audio exists
-        boolean hasAudio = sIsPlaying || 
-                          (sCurrentTitle != null && !sCurrentTitle.isEmpty()) ||
-                          serviceRunning ||
-                          hasNotification;
-        
+
+        Log.d(TAG, "onResume() - sIsPlaying: " + sIsPlaying + ", sCurrentTitle: " + sCurrentTitle +
+                ", serviceRunning: " + serviceRunning + ", hasNotification: " + hasNotification);
+
+        boolean hasAudio = sIsPlaying ||
+                (sCurrentTitle != null && !sCurrentTitle.isEmpty()) ||
+                serviceRunning ||
+                hasNotification;
+
         Log.d(TAG, "onResume() - hasAudio: " + hasAudio);
-        
+
         if (hasAudio) {
             Log.d(TAG, "onResume() - Showing mini-player");
-            // Show mini-player immediately
             audioMiniPlayerBar.setVisibility(View.VISIBLE);
-            
-            // Ensure all child views are visible
+
             if (audioMiniPlayPause != null) audioMiniPlayPause.setVisibility(View.VISIBLE);
             if (audioMiniClose != null) audioMiniClose.setVisibility(View.VISIBLE);
             if (audioMiniTitle != null) audioMiniTitle.setVisibility(View.VISIBLE);
             if (audioMiniSeekBar != null) audioMiniSeekBar.setVisibility(View.VISIBLE);
             if (audioMiniCurrentTime != null) audioMiniCurrentTime.setVisibility(View.VISIBLE);
             if (audioMiniDuration != null) audioMiniDuration.setVisibility(View.VISIBLE);
-            
+
             if (sCurrentTitle != null && !sCurrentTitle.isEmpty()) {
                 audioMiniTitle.setText(sCurrentTitle);
             } else {
-                // If no title but service is running, show placeholder
                 audioMiniTitle.setText("Audio đang phát");
             }
             audioMiniPlayPause.setImageResource(sIsPlaying ? R.drawable.ic_pause_circle : R.drawable.ic_play_circle);
             Log.d(TAG, "onResume() - Set play/pause icon, sIsPlaying: " + sIsPlaying);
-            
-            // Request current state from service - trigger a broadcast immediately
-            // Use a handler to delay slightly to ensure service is ready
+
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 Log.d(TAG, "onResume() - Requesting state from service");
                 Intent requestIntent = new Intent(MainActivity.this, AudioPlayerService.class);
                 requestIntent.setAction(AudioPlayerService.ACTION_SEEK);
-                requestIntent.putExtra(AudioPlayerService.EXTRA_SEEK_POSITION, -1); // Special value to just trigger broadcast
+                requestIntent.putExtra(AudioPlayerService.EXTRA_SEEK_POSITION, -1);
                 startService(requestIntent);
-            }, 50); // Small delay to ensure service is ready
+            }, 50);
         } else {
             Log.d(TAG, "onResume() - NOT showing mini-player (no audio state)");
         }
     }
-    
+
     @Override
     protected void onStop() {
         super.onStop();
-        // Unregister broadcast receiver
         try {
             unregisterReceiver(audioStateReceiver);
         } catch (Exception e) {
             // Already unregistered
         }
     }
-    
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        
+
+        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+
+        // ✅ Handle Google Sign-In result
+        GoogleAuthHelper.handleActivityResult(requestCode, resultCode, data);
+
         // Forward image picker result to EditProfileDialog
         if (editProfileDialog != null) {
             editProfileDialog.handleImageResult(requestCode, resultCode, data);
         }
     }
+
 }
